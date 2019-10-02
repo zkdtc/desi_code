@@ -28,20 +28,29 @@ class DESI_DASHBOARD(object):
         strTable="<html><style> table {font-family: arial, sans-serif;border-collapse: collapse;width: 100%;}"
         strTable=strTable+"td, th {border: 1px solid #dddddd;text-align: left;padding: 8px;}"
         strTable=strTable+"tr:nth-child(even) {background-color: #dddddd;}</style>"
+        #### Overall Table ######
+        table=self._compute_night_statistic("all")
+        strTable=strTable+self._add_html_table(table,"Overall")
+        #### Table for individual night ####
         for night in nights:
             # Create Statistic table for each night 
-            table=self._compute_one_night_statistic(night=night)
-            strTable = strTable+"<h1>Night "+str(night)+"</h1>"
-            strTable = strTable+"<table><tr><th>Tasktype</th><th>waiting</th><th>ready</th><th>running</th><th>done</th><th>failed</th><th>submit</th>"
-            for i in range(len(table)):
-                str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"</td><td>"+str(table[i][4])+"</td><td>"+str(table[i][5])+"</td></tr>"
-                strTable=strTable+str_row
-            strTable=strTable+"</table>"
+            table=self._compute_night_statistic(night)
+            strTable=strTable+self._add_html_table(table,"Night "+str(night))
+            
         timestamp=time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())
         print(timestamp)
         strTable=strTable+"<div style='color:#00FF00'>"+timestamp+"</div></html>"
         hs=open("/global/project/projectdirs/desi/www/users/zhangkai/desi_dashboard/desi_pipe_dashboard.html",'w')
         hs.write(strTable)
+
+    def _add_html_table(self,table,heading):
+        strTable="<h1>"+heading+"</h1>"
+        strTable = strTable+"<table><tr><th>Tasktype</th><th>waiting</th><th>ready</th><th>running</th><th>done</th><th>failed</th><th>submit</th>"
+        for i in range(len(table)):
+            str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"</td><td>"+str(table[i][4])+"</td><td>"+str(table[i][5])+"</td></tr>"
+            strTable=strTable+str_row
+        strTable=strTable+"</table>"
+        return strTable
 
 
     def get_table(self,tasktype=None):
@@ -59,7 +68,7 @@ class DESI_DASHBOARD(object):
         cmd="self.df_"+tasktype+"=pd.DataFrame(status,columns=columns)"
         exec(cmd)
 
-    def _compute_one_night_statistic(self,night=None):
+    def _compute_night_statistic(self,night):
         n_tasktype=len(self.tasktype_arr)
         n_states=5 # waiting, ready, running, done, failed, submit 
         a=[0]*n_states
@@ -71,43 +80,43 @@ class DESI_DASHBOARD(object):
             cmd='df = self.df_'+tasktype
             exec(cmd)
             df=loc['df']
+
             temp=[]
             try:
-                df_this=df.loc[np.where(df['night']==night)]
+                ind=np.where(df['night']==night)
             except:
+                pass
+            if night=="all":
                 df_this=df
+            else:
+                df_this=df.loc[ind]
+
             try:
-                #output[i][0]=len(np.where(df_this['state'] ==0)[0])
                 temp.append(len(np.where(df_this['state'] ==0)[0]))
             except:
                 temp.append(0)
                 pass
             try:
-                #output[i][1]=len(np.where(df_this['state'] ==1)[0])
                 temp.append(len(np.where(df_this['state'] ==1)[0]))
             except:
                 temp.append(0)
                 pass
             try:
-                #output[i][2]=len(np.where(df_this['state'] ==2)[0])
                 temp.append(len(np.where(df_this['state'] ==2)[0]))
             except:
                 temp.append(0)
                 pass
             try:
-                #output[i][3]=len(np.where(df_this['state'] ==3)[0])
                 temp.append(len(np.where(df_this['state'] ==3)[0]))
             except:
                 temp.append(0)
                 pass
             try:
-                #output[i][4]=len(np.where(df_this['state'] ==4)[0])
                 temp.append(len(np.where(df_this['state'] ==4)[0]))
             except:
                 temp.append(0)
                 pass
             try:
-                #output[i][5]=len(np.where(df_this['submitted'] ==1)[0])
                 temp.append(len(np.where(df_this['submitted'] ==1)[0]))
             except:
                 temp.append(0)
