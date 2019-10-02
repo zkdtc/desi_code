@@ -16,6 +16,8 @@ class DESI_DASHBOARD(object):
     """
 
     def __init__(self):
+        self.output_dir="/global/project/projectdirs/desi/www/users/zhangkai/desi_dashboard/"
+        self.output_url="https://portal.nersc.gov/project/desi/users/zhangkai/desi_dashboard/"
         self.conn=self.get_db_conn(host="nerscdb03.nersc.gov",database="desidev",user="desidev_admin")
         self.cur=self.conn.cursor()
         self.schema=self._compute_schema('/global/cscratch1/sd/zhangkai/desi/realtime8/spectro/redux/daily')
@@ -25,12 +27,12 @@ class DESI_DASHBOARD(object):
             cmd="self.get_table(tasktype='"+tasktype+"')"
             exec(cmd)
         nights=np.unique(self.df_preproc['night'])
-        strTable="<html><style> table {font-family: arial, sans-serif;border-collapse: collapse;width: 100%;}"
-        strTable=strTable+"td, th {border: 1px solid #dddddd;text-align: left;padding: 8px;}"
-        strTable=strTable+"tr:nth-child(even) {background-color: #dddddd;}</style>"
+
+        strTable=self._initialize_page()
+        strTable=strTable+"<button class='regular' id='b1'>Display All Nights</button><button class='regular' id='b2'>Hide All Nights</button>"
         #### Overall Table ######
         table=self._compute_night_statistic("all")
-        strTable=strTable+self._add_html_table(table,"Overall")
+        strTable=strTable+self._add_html_table_with_link(table,"Overall")
         #### Table for individual night ####
         for night in nights:
             # Create Statistic table for each night 
@@ -39,18 +41,97 @@ class DESI_DASHBOARD(object):
             
         timestamp=time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())
         print(timestamp)
-        strTable=strTable+"<div style='color:#00FF00'>"+timestamp+"</div></html>"
-        hs=open("/global/project/projectdirs/desi/www/users/zhangkai/desi_dashboard/desi_pipe_dashboard.html",'w')
+        strTable=strTable+"<div style='color:#00FF00'>"+timestamp+"</div>"
+        strTable=strTable+self._add_js_script()
+        strTable=strTable+"</html>"
+        hs=open(self.output_dir+"desi_pipe_dashboard.html",'w')
         hs.write(strTable)
+        hs.close()
+
+
+    def _initialize_page(self):
+        #strTable="<html><style> table {font-family: arial, sans-serif;border-collapse: collapse;width: 100%;}"
+        #strTable=strTable+"td, th {border: 1px solid #dddddd;text-align: left;padding: 8px;}"
+        #strTable=strTable+"tr:nth-child(even) {background-color: #dddddd;}</style>"
+        strTable="""<html><style>
+        h1 {font-family: 'sans-serif';font-size:50px;color:#4CAF50}
+        #c {font-family: 'Trebuchet MS', Arial, Helvetica, sans-serif;border-collapse: collapse;width: 100%;}
+        #c td, #c th {border: 1px solid #ddd;padding: 8px;}
+        #c tr:nth-child(even){background-color: #f2f2f2;}
+        #c tr:hover {background-color: #ddd;}
+        #c th {padding-top: 12px;  padding-bottom: 12px;  text-align: left;  background-color: #4CAF50;  color: white;}
+        .collapsible {background-color: #eee;color: #444;cursor: pointer;padding: 18px;width: 100%;border: none;text-align: left;outline: none;font-size: 25px;}
+        .regular {background-color: #eee;color: #444;  cursor: pointer;  padding: 18px;  width: 25%;  border: 18px;  text-align: left;  outline: none;  font-size: 25px;}
+        .active, .collapsible:hover {  background-color: #ccc;}
+        .content {padding: 0 18px;display: table;overflow: hidden;background-color: #f1f1f1;maxHeight:0px;}</style>
+        <h1>DESI PIPELINE STATUS</h1>"""
+
+        return strTable
 
     def _add_html_table(self,table,heading):
-        strTable="<h1>"+heading+"</h1>"
-        strTable = strTable+"<table><tr><th>Tasktype</th><th>waiting</th><th>ready</th><th>running</th><th>done</th><th>failed</th><th>submit</th>"
+        strTable="<button class='collapsible'>"+heading+"</button><div class='content' style='display:inline-block;min-height:0%;'>"
+        strTable = strTable+"<table id='c'><tr><th>Tasktype</th><th>waiting</th><th>ready</th><th>running</th><th>done</th><th>failed</th><th>submit</th></tr>"
         for i in range(len(table)):
             str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"</td><td>"+str(table[i][4])+"</td><td>"+str(table[i][5])+"</td></tr>"
             strTable=strTable+str_row
+        strTable=strTable+"</table></div>"
+        return strTable
+
+    def _add_html_table_with_link(self,table,heading):
+        strTable="<h2>"+heading+"</h2>"
+        strTable = strTable+"<table id='c'><tr><th>Tasktype</th><th>waiting</th><th>ready</th><th>running</th><th>done</th><th>failed</th><th>submit</th></tr>"
+        for i in range(len(table)):
+            tasktype=self.tasktype_arr[i]
+            if table[i][4]==0:
+                str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"</td><td>"+str(table[i][4])+"</td><td>"+str(table[i][5])+"</td></tr>"
+            else:
+                str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"</td><td><a href='"+self.output_url+"failed_"+tasktype+"_list.html'><font color='red'>"+str(table[i][4])+"</font></a></td><td>"+str(table[i][5])+"</td></tr>"
+                loc=locals()
+                cmd='df = self.df_'+tasktype
+                exec(cmd)
+                df=loc['df']
+                ind=np.where(df['state'] ==4)[0]
+                print(ind)
+                strFailed=self._initialize_page()
+                strFailed=strFailed+"<h2>Failed "+tasktype+"</h2><table id='c'><tr><th>Name</th></tr>"
+                for j in range(len(ind)):
+                    strFailed=strFailed+"<tr><td>"+str(df['name'][ind[j]])+"</td></tr>"
+                strFailed=strFailed+"</table>"
+                hs=open(self.output_dir+"failed_"+tasktype+"_list.html",'w')
+                hs.write(strFailed)
+                hs.close()
+            strTable=strTable+str_row
         strTable=strTable+"</table>"
         return strTable
+
+    def _add_js_script(self):
+        s="""<script>
+            var coll = document.getElementsByClassName('collapsible');
+            var i;
+            for (i = 0; i < coll.length; i++) {
+                coll[i].nextElementSibling.style.maxHeight='0px';
+                coll[i].addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    var content = this.nextElementSibling;
+                    if (content.style.maxHeight){
+                       content.style.maxHeight = null;
+                    } else {
+                      content.style.maxHeight = '0px';
+                            } 
+                    });
+             };
+             var b1 = document.getElementById('b1');
+             b1.addEventListener('click',function() {
+                 for (i = 0; i < coll.length; i++) {
+                     coll[i].nextElementSibling.style.maxHeight=null;
+                                                   }});
+             var b2 = document.getElementById('b2');
+             b2.addEventListener('click',function() {
+                 for (i = 0; i < coll.length; i++) {
+                     coll[i].nextElementSibling.style.maxHeight='0px'
+                             }});
+              </script>"""
+        return s
 
 
     def get_table(self,tasktype=None):
@@ -123,13 +204,6 @@ class DESI_DASHBOARD(object):
                 pass
             output[i]=temp
         return output
-
-
-
-
-
-
-
 
     def _compute_schema(self,s):
         import hashlib
