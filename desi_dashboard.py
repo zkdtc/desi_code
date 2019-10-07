@@ -20,9 +20,10 @@ class DESI_DASHBOARD(object):
         self.output_url="https://portal.nersc.gov/project/desi/users/zhangkai/desi_dashboard/"
         self.conn=self.get_db_conn(host="nerscdb03.nersc.gov",database="desidev",user="desidev_admin")
         self.cur=self.conn.cursor()
-        self.schema=self._compute_schema('/global/cscratch1/sd/zhangkai/desi/realtime8/spectro/redux/daily')
+        self.redux_dir="/global/cscratch1/sd/zhangkai/desi/realtime9/spectro/redux/daily"
+        self.schema=self._compute_schema(self.redux_dir)
         self.tasktype_arr=['preproc','psf','psfnight','traceshift','extract','fiberflat','fiberflatnight','sky','starfit','fluxcalib','cframe','spectra','redshift']
-        # Load data 
+        self.tasktype_arr_nonight=['spectra','redshift']# Load data 
         for tasktype in self.tasktype_arr:
             cmd="self.get_table(tasktype='"+tasktype+"')"
             exec(cmd)
@@ -30,6 +31,7 @@ class DESI_DASHBOARD(object):
 
         strTable=self._initialize_page()
         strTable=strTable+"<button class='regular' id='b1'>Display All Nights</button><button class='regular' id='b2'>Hide All Nights</button>"
+        strTable=strTable+"<h2>Data Dir: "+self.redux_dir+"</h2>"
         #### Overall Table ######
         table=self._compute_night_statistic("all")
         strTable=strTable+self._add_html_table_with_link(table,"Overall")
@@ -64,7 +66,7 @@ class DESI_DASHBOARD(object):
         .regular {background-color: #eee;color: #444;  cursor: pointer;  padding: 18px;  width: 25%;  border: 18px;  text-align: left;  outline: none;  font-size: 25px;}
         .active, .collapsible:hover {  background-color: #ccc;}
         .content {padding: 0 18px;display: table;overflow: hidden;background-color: #f1f1f1;maxHeight:0px;}</style>
-        <h1>DESI PIPELINE STATUS</h1>"""
+        <h1>DESI PIPELINE STATUS MONITOR</h1>"""
 
         return strTable
 
@@ -72,8 +74,11 @@ class DESI_DASHBOARD(object):
         strTable="<button class='collapsible'>"+heading+"</button><div class='content' style='display:inline-block;min-height:0%;'>"
         strTable = strTable+"<table id='c'><tr><th>Tasktype</th><th>waiting</th><th>ready</th><th>running</th><th>done</th><th>failed</th><th>submit</th></tr>"
         for i in range(len(table)):
-            str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"</td><td>"+str(table[i][4])+"</td><td>"+str(table[i][5])+"</td></tr>"
-            strTable=strTable+str_row
+            try:
+                str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"</td><td>"+str(table[i][4])+"</td><td>"+str(table[i][5])+"</td></tr>"
+                strTable=strTable+str_row
+            except:
+                pass
         strTable=strTable+"</table></div>"
         return strTable
 
@@ -154,7 +159,11 @@ class DESI_DASHBOARD(object):
         n_states=5 # waiting, ready, running, done, failed, submit 
         a=[0]*n_states
         output=[a]*n_tasktype
-        for i in range(n_tasktype):
+        if night=="all":
+            n_loop=n_tasktype
+        else:
+            n_loop=n_tasktype-2
+        for i in range(n_loop):
             df=0
             tasktype=self.tasktype_arr[i]
             loc=locals()
@@ -170,7 +179,11 @@ class DESI_DASHBOARD(object):
             if night=="all":
                 df_this=df
             else:
-                df_this=df.loc[ind]
+                try:
+                    df_this=df.iloc[ind[0].tolist()]
+                except:
+                    print(night)
+                    import pdb;pdb.set_trace()
 
             try:
                 temp.append(len(np.where(df_this['state'] ==0)[0]))
