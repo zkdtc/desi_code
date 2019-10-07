@@ -16,11 +16,13 @@ class DESI_DASHBOARD(object):
     """
 
     def __init__(self):
+        prod="realtime8"
         self.output_dir="/global/project/projectdirs/desi/www/users/zhangkai/desi_dashboard/"
         self.output_url="https://portal.nersc.gov/project/desi/users/zhangkai/desi_dashboard/"
+        self.log_dir="/global/cscratch1/sd/zhangkai/desi/"+prod+"/spectro/redux/daily/run/logs"
         self.conn=self.get_db_conn(host="nerscdb03.nersc.gov",database="desidev",user="desidev_admin")
         self.cur=self.conn.cursor()
-        self.redux_dir="/global/cscratch1/sd/zhangkai/desi/realtime9/spectro/redux/daily"
+        self.redux_dir="/global/cscratch1/sd/zhangkai/desi/"+prod+"/spectro/redux/daily"
         self.schema=self._compute_schema(self.redux_dir)
         self.tasktype_arr=['preproc','psf','psfnight','traceshift','extract','fiberflat','fiberflatnight','sky','starfit','fluxcalib','cframe','spectra','redshift']
         self.tasktype_arr_nonight=['spectra','redshift']# Load data 
@@ -44,7 +46,7 @@ class DESI_DASHBOARD(object):
         timestamp=time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())
         print(timestamp)
         strTable=strTable+"<div style='color:#00FF00'>"+timestamp+"</div>"
-        strTable=strTable+self._add_js_script()
+        strTable=strTable+self._add_js_script1()
         strTable=strTable+"</html>"
         hs=open(self.output_dir+"desi_pipe_dashboard.html",'w')
         hs.write(strTable)
@@ -65,7 +67,45 @@ class DESI_DASHBOARD(object):
         .collapsible {background-color: #eee;color: #444;cursor: pointer;padding: 18px;width: 100%;border: none;text-align: left;outline: none;font-size: 25px;}
         .regular {background-color: #eee;color: #444;  cursor: pointer;  padding: 18px;  width: 25%;  border: 18px;  text-align: left;  outline: none;  font-size: 25px;}
         .active, .collapsible:hover {  background-color: #ccc;}
-        .content {padding: 0 18px;display: table;overflow: hidden;background-color: #f1f1f1;maxHeight:0px;}</style>
+        .content {padding: 0 18px;display: table;overflow: hidden;background-color: #f1f1f1;maxHeight:0px;}
+        /* The Modal (background) */
+        .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1; /* Sit on top */
+        padding-top: 100px; /* Location of the box */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgb(0,0,0); /* Fallback color */
+        background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+        }
+
+        /* Modal Content */
+        .modal-content {
+        background-color: #fefefe;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        }
+
+       /* The Close Button */
+       .close {
+        color: #aaaaaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+             color: #000;
+             text-decoration: none;
+             cursor: pointer;
+         }
+        </style>
         <h1>DESI PIPELINE STATUS MONITOR</h1>"""
 
         return strTable
@@ -87,21 +127,53 @@ class DESI_DASHBOARD(object):
         strTable = strTable+"<table id='c'><tr><th>Tasktype</th><th>waiting</th><th>ready</th><th>running</th><th>done</th><th>failed</th><th>submit</th></tr>"
         for i in range(len(table)):
             tasktype=self.tasktype_arr[i]
-            if table[i][4]==0:
+            if table[i][4]==0:   
                 str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"</td><td>"+str(table[i][4])+"</td><td>"+str(table[i][5])+"</td></tr>"
-            else:
+            else:     # Add href link here:
                 str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"</td><td><a href='"+self.output_url+"failed_"+tasktype+"_list.html'><font color='red'>"+str(table[i][4])+"</font></a></td><td>"+str(table[i][5])+"</td></tr>"
                 loc=locals()
                 cmd='df = self.df_'+tasktype
                 exec(cmd)
                 df=loc['df']
                 ind=np.where(df['state'] ==4)[0]
-                print(ind)
+                # Create new html pages to list failed exposures. 
+                # Add Modal 20191007
                 strFailed=self._initialize_page()
+                # Add failed exposure tables 
                 strFailed=strFailed+"<h2>Failed "+tasktype+"</h2><table id='c'><tr><th>Name</th></tr>"
                 for j in range(len(ind)):
-                    strFailed=strFailed+"<tr><td>"+str(df['name'][ind[j]])+"</td></tr>"
+                    name=str(df['name'][ind[j]])
+                    if tasktype == "spectra" or tasktype == "redshift":
+                        parts=name.split('_')
+                        logfile=self.log_dir+'/healpix/'+parts[2][0:3]+'/'+parts[2]+'/'+name+'.log'
+                    else:
+                        parts=name.split('_')
+                        night=parts[1]
+                        logfile=self.log_dir+'/night/'+night+'/'+name+'.log'
+                    try:
+                        f_log=open(logfile,"rU",newline='')
+                        log=f_log.read()
+                        f_log.close()
+                    except:
+                        log="Can not find log file "+logfile 
+
+                    strFailed=strFailed+"<tr><td>"+name+"</td><td><button id='Btn"+str(j)+"'>Show Log</button></td></tr>"
                 strFailed=strFailed+"</table>"
+                # Add modals
+                for j in range(len(ind)):
+                    strFailed=strFailed+"""
+                    <!-- The Modal -->
+                    <div id='modal"""+str(j)+"""' class='modal'>
+                       <!-- Modal content -->
+                       <div class='modal-content'>
+                          <span class='close' id='span"""+str(j)+"""'>&times;</span>
+                         <p>"""+log+"""</p>
+                       </div>
+                    </div>"""
+
+
+
+                strFailed=strFailed+self._add_js_script2(len(ind))
                 hs=open(self.output_dir+"failed_"+tasktype+"_list.html",'w')
                 hs.write(strFailed)
                 hs.close()
@@ -109,7 +181,7 @@ class DESI_DASHBOARD(object):
         strTable=strTable+"</table>"
         return strTable
 
-    def _add_js_script(self):
+    def _add_js_script1(self):
         s="""<script>
             var coll = document.getElementsByClassName('collapsible');
             var i;
@@ -135,7 +207,25 @@ class DESI_DASHBOARD(object):
                  for (i = 0; i < coll.length; i++) {
                      coll[i].nextElementSibling.style.maxHeight='0px'
                              }});
-              </script>"""
+            </script>"""
+        return s
+
+    def _add_js_script2(self,n_modal):
+        s="""<script>"""
+        for i in range(n_modal):
+            s=s+"""
+                var modal"""+str(i)+""" = document.getElementById('modal"""+str(i)+"""');
+                var l"""+str(i)+""" = document.getElementById('Btn"""+str(i)+"""');
+
+                l"""+str(i)+""".addEventListener('click',function() {
+                  modal"""+str(i)+""".style.display = "block";
+                })
+
+                span"""+str(i)+""".addEventListener('click',function() {
+                  modal"""+str(i)+""".style.display = "none";
+                })"""
+
+        s=s+"""</script>"""
         return s
 
 
