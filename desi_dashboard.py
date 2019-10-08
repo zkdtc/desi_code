@@ -16,7 +16,7 @@ class DESI_DASHBOARD(object):
     """
 
     def __init__(self):
-        prod="realtime8"
+        prod="realtime9"
         self.output_dir="/global/project/projectdirs/desi/www/users/zhangkai/desi_dashboard/"
         self.output_url="https://portal.nersc.gov/project/desi/users/zhangkai/desi_dashboard/"
         self.log_dir="/global/cscratch1/sd/zhangkai/desi/"+prod+"/spectro/redux/daily/run/logs"
@@ -77,7 +77,7 @@ class DESI_DASHBOARD(object):
         left: 0;
         top: 0;
         width: 100%; /* Full width */
-        height: 100%; /* Full height */
+        height: 90%; /* Full height */
         overflow: auto; /* Enable scroll if needed */
         background-color: rgb(0,0,0); /* Fallback color */
         background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
@@ -91,6 +91,7 @@ class DESI_DASHBOARD(object):
         border: 1px solid #888;
         width: 80%;
         }
+        
 
        /* The Close Button */
        .close {
@@ -136,11 +137,18 @@ class DESI_DASHBOARD(object):
                 exec(cmd)
                 df=loc['df']
                 ind=np.where(df['state'] ==4)[0]
+                ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 # Create new html pages to list failed exposures. 
                 # Add Modal 20191007
+                ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 strFailed=self._initialize_page()
                 # Add failed exposure tables 
                 strFailed=strFailed+"<h2>Failed "+tasktype+"</h2><table id='c'><tr><th>Name</th></tr>"
+                for j in range(len(ind)):
+                    name=str(df['name'][ind[j]])
+                    strFailed=strFailed+"<tr><td>"+name+"</td><td><button id='Btn"+str(j)+"'>Show Log</button></td></tr>"
+                strFailed=strFailed+"</table>"
+                # Add modals
                 for j in range(len(ind)):
                     name=str(df['name'][ind[j]])
                     if tasktype == "spectra" or tasktype == "redshift":
@@ -151,16 +159,13 @@ class DESI_DASHBOARD(object):
                         night=parts[1]
                         logfile=self.log_dir+'/night/'+night+'/'+name+'.log'
                     try:
-                        f_log=open(logfile,"rU",newline='')
+                        f_log=open(logfile,"r")
                         log=f_log.read()
                         f_log.close()
+                        print(name,log)
                     except:
-                        log="Can not find log file "+logfile 
+                        log="Can not find log file "+logfile
 
-                    strFailed=strFailed+"<tr><td>"+name+"</td><td><button id='Btn"+str(j)+"'>Show Log</button></td></tr>"
-                strFailed=strFailed+"</table>"
-                # Add modals
-                for j in range(len(ind)):
                     strFailed=strFailed+"""
                     <!-- The Modal -->
                     <div id='modal"""+str(j)+"""' class='modal'>
