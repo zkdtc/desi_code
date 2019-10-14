@@ -4,7 +4,6 @@ import fitsio
 import astropy.io.fits as pyfits
 import subprocess
 import pandas as pd
-from desispec.util import runcmd
 import errno
 import time
 import numpy as np
@@ -162,7 +161,6 @@ class DESI_DASHBOARD(object):
                         f_log=open(logfile,"r")
                         log=f_log.read()
                         f_log.close()
-                        print(name,log)
                     except:
                         log="Can not find log file "+logfile
 
