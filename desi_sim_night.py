@@ -18,16 +18,18 @@ class DESI_SIM_NIGHT(object):
     """
 
     def __init__(self):
-        os.environ['BASEDIR']=os.environ['SCRATCH']+'/desi/realtime8'
+        os.environ['BASEDIR']=os.environ['SCRATCH']+'/desi/realtime9'
         cmd="mkdir -p "+os.environ['BASEDIR']+"/spectro/redux/daily"
         print(cmd)
         os.system(cmd) #subprocess.run(cmd,shell=True,check=True)
         cmd="mkdir -p "+os.environ['BASEDIR']+"/spectro/redux/data"
         print(cmd)
         os.system(cmd) #subprocess.run(cmd,shell=True,check=True)
-        #cmd="desi_pipe create --db-postgres --data $BASEDIR/spectro/data --redux $BASEDIR/spectro/redux --prod daily --force"
-        #print(cmd)
-        #os.system(cmd) #subprocess.run(cmd,shell=True,check=True)
+        a=input('Are you sure you want to create this prod?')
+        if a=='Y' or a=='y':
+            cmd="desi_pipe create --db-postgres --data $BASEDIR/spectro/data --redux $BASEDIR/spectro/redux --prod daily --force"
+            print(cmd)
+            os.system(cmd) #subprocess.run(cmd,shell=True,check=True)
         cmd="source $BASEDIR/spectro/redux/daily/setup.sh"
         print(cmd)
         os.system(cmd) #subprocess.run(cmd,shell=True,check=True)
@@ -36,7 +38,8 @@ class DESI_SIM_NIGHT(object):
         os.system(cmd) #subprocess.run(cmd,shell=True,check=True)
         os.environ['SVDCDATA']="/global/cscratch1/sd/sjbailey/desi/svdc2019d/spectro/data/"
         night_arr=['20200103','20200104','20200105','20200106','20200107','20200108','20200109']
-        trigger_time_arr=[1569432115+9200., 1569450115, 1569450115+24*3600, 1569450115+2*24*3600, 1569450115+3*24*3600,1569450115+4*24*3600,1569450115+5*24*3600] # 2019-09-24 16:20 
+        t0=1570059490
+        trigger_time_arr=[t0,t0+1*24*3600, t0+2*24*3600, t0+3*24*3600, t0+4*24*3600,t0+5*24*3600,t0+6*24*3600] # 2019-09-24 16:20 
         expid_arr=[['00001012','00001013','00001014','00001015','00001016','00001017','00001018','00001019','00001020','00001021','00001022','00001023','00001024','00001025','00001026','00001027','00001028'],
                 ['00001029','00001030','00001031','00001032','00001033','00001034','00001035','00001036','00001037','00001038','00001039','00001040','00001041'],
                 ['00001042','00001043','00001044','00001045','00001046','00001047','00001048','00001049','00001050','00001051','00001052','00001053','00001054','00001055','00001056','00001057','00001058','00001059','00001060','00001061','00001062','00001063','00001064','00001065','00001066','00001067','00001068','00001069','00001070','00001071','00001072','00001073','00001074','00001075','00001076','00001077','00001078','00001079','00001080'],
