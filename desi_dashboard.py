@@ -15,16 +15,24 @@ class DESI_DASHBOARD(object):
     """
 
     def __init__(self):
+        ############
+        ## Input ###
+        ############
         prod="realtime9"
         self.output_dir="/global/project/projectdirs/desi/www/users/zhangkai/desi_dashboard/"
         self.output_url="https://portal.nersc.gov/project/desi/users/zhangkai/desi_dashboard/"
+        self.data_dir="/global/cscratch1/sd/zhangkai/desi/"+prod+"/spectro/data/"
         self.log_dir="/global/cscratch1/sd/zhangkai/desi/"+prod+"/spectro/redux/daily/run/logs"
         self.conn=self.get_db_conn(host="nerscdb03.nersc.gov",database="desidev",user="desidev_admin")
         self.cur=self.conn.cursor()
         self.redux_dir="/global/cscratch1/sd/zhangkai/desi/"+prod+"/spectro/redux/daily"
         self.schema=self._compute_schema(self.redux_dir)
         self.tasktype_arr=['preproc','psf','psfnight','traceshift','extract','fiberflat','fiberflatnight','sky','starfit','fluxcalib','cframe','spectra','redshift']
-        self.tasktype_arr_nonight=['spectra','redshift']# Load data 
+        self.tasktype_arr_nonight=['spectra','redshift']
+        ############
+        # Load data 
+        ############
+        self.file_count=self.count_files()
         for tasktype in self.tasktype_arr:
             cmd="self.get_table(tasktype='"+tasktype+"')"
             exec(cmd)
@@ -33,14 +41,18 @@ class DESI_DASHBOARD(object):
         strTable=self._initialize_page()
         strTable=strTable+"<button class='regular' id='b1'>Display All Nights</button><button class='regular' id='b2'>Hide All Nights</button>"
         strTable=strTable+"<h2>Data Dir: "+self.redux_dir+"</h2>"
+        #########################
         #### Overall Table ######
+        #########################
         table=self._compute_night_statistic("all")
         strTable=strTable+self._add_html_table_with_link(table,"Overall")
+        ####################################
         #### Table for individual night ####
+        ####################################
         for night in nights:
             # Create Statistic table for each night 
             table=self._compute_night_statistic(night)
-            strTable=strTable+self._add_html_table(table,"Night "+str(night))
+            strTable=strTable+self._add_html_table(table,str(night))
             
         timestamp=time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())
         print(timestamp)
@@ -110,12 +122,22 @@ class DESI_DASHBOARD(object):
 
         return strTable
 
-    def _add_html_table(self,table,heading):
+    def _add_html_table(self,table,night):
+        heading="Night "+night
         strTable="<button class='collapsible'>"+heading+"</button><div class='content' style='display:inline-block;min-height:0%;'>"
         strTable = strTable+"<table id='c'><tr><th>Tasktype</th><th>waiting</th><th>ready</th><th>running</th><th>done</th><th>failed</th><th>submit</th></tr>"
         for i in range(len(table)):
+            n_expected=0
             try:
-                str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"</td><td>"+str(table[i][4])+"</td><td>"+str(table[i][5])+"</td></tr>"
+                loc=locals()
+                cmd="n_expected=self.file_count['"+night+"']['"+self.tasktype_arr[i]+"']"
+                a=exec(cmd)
+                n_expected=loc['n_expected']
+                fraction=np.array(float(table[i][3]))/np.array(float(n_expected))
+                color="green"
+                if fraction<1.0:
+                    color="red"
+                str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"&#x0002F;"+str(n_expected)+"&nbsp;<font color='"+color+"'>&#x00028;"+str(fraction)[0:5]+"&#x00029;</font>"+"</td><td>"+str(table[i][4])+"</td><td>"+str(table[i][5])+"</td></tr>"
                 strTable=strTable+str_row
             except:
                 pass
@@ -127,10 +149,23 @@ class DESI_DASHBOARD(object):
         strTable = strTable+"<table id='c'><tr><th>Tasktype</th><th>waiting</th><th>ready</th><th>running</th><th>done</th><th>failed</th><th>submit</th></tr>"
         for i in range(len(table)):
             tasktype=self.tasktype_arr[i]
+            n_expected=0
+            try:
+                loc=locals()
+                cmd="n_expected=self.file_count['overall']['"+tasktype+"']"
+                a=exec(cmd)
+                n_expected=loc['n_expected']
+                fraction=np.array(float(table[i][3]))/np.array(float(n_expected))
+                color="green"
+                if fraction<1.0:
+                    color="red"
+            except:
+                color="red"
+
             if table[i][4]==0:   
-                str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"</td><td>"+str(table[i][4])+"</td><td>"+str(table[i][5])+"</td></tr>"
+                str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"&#x0002F;"+str(n_expected)+"&nbsp;<font color='"+color+"'>&#x00028;"+str(fraction)[0:5]+"&#x00029;</font>"+"</td><td>"+str(table[i][4])+"</td><td>"+str(table[i][5])+"</td></tr>"
             else:     # Add href link here:
-                str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"</td><td><a href='"+self.output_url+"failed_"+tasktype+"_list.html'><font color='red'>"+str(table[i][4])+"</font></a></td><td>"+str(table[i][5])+"</td></tr>"
+                str_row="<tr><td>"+self.tasktype_arr[i]+"</td><td>"+str(table[i][0])+"</td><td>"+str(table[i][1])+"</td><td>"+str(table[i][2])+"</td><td>"+str(table[i][3])+"&#x0002F;"+str(n_expected)+"&nbsp;<font color='"+color+"'>&#x00028;"+str(fraction)[0:5]+"&#x00029;</font>"+"</td><td><a href='"+self.output_url+"failed_"+tasktype+"_list.html'><font color='red'>"+str(table[i][4])+"</font></a></td><td>"+str(table[i][5])+"</td></tr>"
                 loc=locals()
                 cmd='df = self.df_'+tasktype
                 exec(cmd)
@@ -170,7 +205,7 @@ class DESI_DASHBOARD(object):
                        <!-- Modal content -->
                        <div class='modal-content'>
                           <span class='close' id='span"""+str(j)+"""'>&times;</span>
-                         <p>"""+log+"""</p>
+                         <p><pre>"""+log+"""</pre></p>
                        </div>
                     </div>"""
 
@@ -231,6 +266,57 @@ class DESI_DASHBOARD(object):
         s=s+"""</script>"""
         return s
 
+    def count_files(self):
+        from os import listdir
+        nights=listdir(self.data_dir)
+        output={}
+        dict_all={'night':'overall','n_arc':0,'n_flat':0,'n_science':0,'preproc':0,'psf':0,'psfnight':0,'traceshift':0,'extract':0,'fiberflat':0,'fiberflatnight':0,'sky':0,'starfit':0,'fluxcalib':0,'cframe':0}
+        for night in nights:
+            dict_t={'night':night,'n_arc':0,'n_flat':0,'n_science':0,'preproc':0,'psf':0,'psfnight':0,'traceshift':0,'extract':0,'fiberflat':0,'fiberflatnight':0,'sky':0,'starfit':0,'fluxcalib':0,'cframe':0}
+            expids=listdir(self.data_dir+'/'+night+'/')
+            for expid in expids:
+                filename=self.data_dir+'/'+night+'/'+expid+'/desi-'+expid+'.fits.fz'
+                h=fitsio.read_header(filename,1)
+                flavor=h['flavor'].strip()
+                if flavor=='arc':
+                    dict_t['n_arc']=dict_t['n_arc']+1
+                elif flavor=='flat':
+                    dict_t['n_flat']=dict_t['n_flat']+1
+                elif flavor=='science':
+                    dict_t['n_science']=dict_t['n_science']+1
+            n_arc=dict_t['n_arc']
+            n_flat=dict_t['n_flat']
+            n_science=dict_t['n_science']
+            dict_t['preproc']=30*(n_arc+n_flat+n_science)
+            dict_t['psf']=30*(n_arc)
+            dict_t['psfnight']=30
+            dict_t['traceshift']=30*(n_flat+n_science)
+            dict_t['extract']=30*(n_flat+n_science)
+            dict_t['fiberflat']=30*n_flat
+            dict_t['fiberflatnight']=30
+            dict_t['sky']=30*n_science
+            dict_t['starfit']=10*n_science
+            dict_t['fluxcalib']=30*n_science
+            dict_t['cframe']=30*n_science
+            dict_all['n_arc']+=dict_t['n_arc']
+            dict_all['n_flat']+=dict_t['n_flat']
+            dict_all['n_science']+=dict_t['n_science']
+            dict_all['preproc']+=dict_t['preproc']
+            dict_all['psf']+=dict_t['psf']
+            dict_all['psfnight']+=dict_t['psfnight']
+            dict_all['traceshift']+=dict_t['traceshift']
+            dict_all['extract']+=dict_t['extract']
+            dict_all['fiberflat']+=dict_t['fiberflat']
+            dict_all['fiberflat']+=dict_t['fiberflatnight']
+            dict_all['sky']+=dict_t['sky']
+            dict_all['starfit']+=dict_t['starfit']
+            dict_all['fluxcalib']+=dict_t['fluxcalib']
+            dict_all['cframe']+=dict_t['cframe']
+            cmd="output['"+night+"']=dict_t"
+            a=exec(cmd)
+        output['overall']=dict_all
+
+        return output
 
     def get_table(self,tasktype=None):
         if tasktype=='preproc':
