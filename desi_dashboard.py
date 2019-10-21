@@ -9,6 +9,7 @@ import numpy as np
 import psycopg2
 import hashlib
 import pdb
+import shlex
 class DESI_DASHBOARD(object):
     """ Code to generate the statistic of desi_pipe production status   
     Usage:
@@ -223,6 +224,16 @@ class DESI_DASHBOARD(object):
                         f_log=open(logfile,"r")
                         log=f_log.read()
                         f_log.close()
+                        ## Identify Jobid if there is any ##
+                        try:
+                            jobid_ind=log.find('job id')
+                            jobid=log[jobid_ind+6:jobid_ind+6+9]
+                            cmd="sacct --format JobID,Start,End,Node,State -j "+jobid
+                            args=shlex.split(cmd)
+                            output=subprocess.check_output(args)
+                            log=log+'\n\n\n'+output.decode("utf-8")
+                        except:
+                            pass
                     except:
                         log="Can not find log file "+logfile
 
