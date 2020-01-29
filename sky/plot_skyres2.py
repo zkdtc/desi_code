@@ -4,6 +4,8 @@
 ./plot_skyres2.py -i /project/projectdirs/desi/spectro/redux/daily/exposures/20191111/00027278/frame-r6-00027278.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp6/fiberflat-sm7-r-20191108.fits -o test.dat
 
 ./plot_skyres2.py -i /project/projectdirs/desi/spectro/redux/daily/exposures/20191112/00027405/frame-r6-00027405.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp6/fiberflat-sm7-r-20191108.fits -o test.dat
+
+./plot_skyres2.py -i /project/projectdirs/desi/spectro/redux/v0/exposures/20191029/00022536/frame-r3-00022536.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp3/fiberflat-sm4-r-20191028.fits -o test.dat
 """
 
 import os,sys,glob
@@ -146,6 +148,7 @@ for j in range(res.shape[1]) :  # Loop over individual pixels
     sigma = rms[j] #sum(y*(x-mean)**2)/n        #note this correction
     nbins=50
     plot=0
+    """
     if plot==1:
         fig, ax = plt.subplots()
         n, bins, patches=ax.hist(res[ok,j],bins=nbins)
@@ -156,16 +159,19 @@ for j in range(res.shape[1]) :  # Loop over individual pixels
         popt,pcov = curve_fit(gaus,bins2,n,p0=[1,mean,sigma])
         if plot==1:
             ax.plot(bins2,gaus(bins2,*popt),'ro:',label='fit')
-        std=popt[2]
+        std=abs(popt[2])
     except:
         std=999
-    
+
+    """
+    std=0.
     if plot==1:
         ax.text(0.7, 0.8, 'rms='+str(rms[j]), horizontalalignment='center',verticalalignment='center', transform=ax.transAxes)
         ax.text(0.7, 0.7, 'fit='+str(std), horizontalalignment='center',verticalalignment='center', transform=ax.transAxes)
         plt.show()
     plt.close()  # Release the memory
     stds[j]=std
+    
     std_sky[j]=100.*np.sqrt(std**2-np.mean(1./ivar[ok,j]))/np.mean(flux[ok,j])
     erms[j]=np.sqrt(np.mean(1./ivar[ok,j]))
     erms05[j]=np.sqrt(np.mean(1./ivar[ok,j]+(0.005*flux[ok,j])**2))
@@ -174,7 +180,8 @@ for j in range(res.shape[1]) :  # Loop over individual pixels
     erms5[j]=np.sqrt(np.mean(1./ivar[ok,j]+(0.05*flux[ok,j])**2))
     erms10[j]=np.sqrt(np.mean(1./ivar[ok,j]+(0.1*flux[ok,j])**2))
     ormask[j]=np.sum(ivar[:,j]==0)
-    print(std,std_sky[j])
+    print(rms[j],std,np.sqrt(np.mean(1./ivar[ok,j])),std_sky[j])
+
 
 if 0 :
     plt.figure("skyflux")

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 """
-./cal_skyres.py -i /project/projectdirs/desi/spectro/redux/daily/exposures/20191111/00027278/frame-r6-00027278.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp6/fiberflat-sm7-r-20191108.fits -o test.dat
+./cal_skyres.py -i /project/projectdirs/desi/spectro/redux/daily/exposures/20191111/00027278/frame-r6-00027278.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp6/fiberflat-sm7-r-20191108.fits -o test.dat -m rough
 
-./cal_skyres.py -i /project/projectdirs/desi/spectro/redux/daily/exposures/20191112/00027405/frame-r6-00027405.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp6/fiberflat-sm7-r-20191108.fits -o test.dat
+./cal_skyres.py -i /project/projectdirs/desi/spectro/redux/daily/exposures/20191112/00027405/frame-r6-00027405.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp6/fiberflat-sm7-r-20191108.fits -o test.dat -m rough
 """
 
 import os,sys,glob
@@ -32,13 +32,15 @@ parser.add_argument('-t','--title', type = str, default = "skyres", required = F
 parser.add_argument('--fiberflat', type = str, required = True)
 parser.add_argument('--satur', type = float, default=None, required = False ,help="mask lines above that level")
 parser.add_argument('-o','--outfile', type = str, default = None, required = True,help = 'output file')
-
+parser.add_argument('-m','--std_method', type = str, default = None, required = False,help = 'Method to calculate STD, rough uses 84 percentile minus 16 percentile and divided by 2. Otherwise, fit the distribution.')
 args = parser.parse_args()
 
 
 flux=[]
 ivar=[]
 sky=[]
+
+std_method=args.std_method
 
 for filename in args.infile :
     print(filename)
@@ -106,7 +108,6 @@ res = flux - sky
 median_res=np.median(res,1)
 good_fiber=np.where(np.abs(median_res-np.median(res))<5*np.std(median_res))
 good_fiber=np.where(np.abs(median_res-np.median(res))<5*np.std(median_res[good_fiber]))
-
 if args.satur is not None : # mask out saturated sky lines 
     mflux=np.median(flux,axis=0)
     bad=(mflux>args.satur)
@@ -143,18 +144,30 @@ for j in range(res.shape[1]) :  # Loop over individual pixels
     rms[j]=np.sqrt(np.mean(res[ok,j]**2))
     mean = 0#sum(x*y)/n                   #note this correction
     sigma = rms[j] #sum(y*(x-mean)**2)/n        #note this correction
-    nbins=50
-    n, bins, patches=plt.hist(res[ok,j],bins=nbins)
-    bins2=[(bins[i+1]+bins[i])/2. for i in range(nbins)]
-    try:
-        popt,pcov = curve_fit(gaus,bins2,n,p0=[1,mean,sigma])
-        std=popt[2]
-    except:
-        std=999
+    if std_method=='rough':
+        try:
+            std=(np.percentile(res[ok,j],84)-np.percentile(res[ok,j],16))/2.
+        except:
+            std=999
+
+    else:
+        #### Accurate method to calculate std ####
+        nbins=50
+        n, bins, patches=plt.hist(res[ok,j],bins=nbins)
+        bins2=[(bins[i+1]+bins[i])/2. for i in range(nbins)]
+        try:
+            popt,pcov = curve_fit(gaus,bins2,n,p0=[1,mean,sigma])
+            std=popt[2]
+        except:
+            std=999
+
     
     plt.close()  # Release the memory
     stds[j]=std
-    std_sky[j]=100.*np.sqrt(std**2-np.mean(1./ivar[ok,j]))/np.mean(flux[ok,j])
+    if std**2-np.mean(1./ivar[ok,j])>0:
+        std_sky[j]=100.*np.sqrt(std**2-np.mean(1./ivar[ok,j]))/np.mean(flux[ok,j])
+    else:
+        std_sky[j]=0.
     erms[j]=np.sqrt(np.mean(1./ivar[ok,j]))
     erms05[j]=np.sqrt(np.mean(1./ivar[ok,j]+(0.005*flux[ok,j])**2))
     erms1[j]=np.sqrt(np.mean(1./ivar[ok,j]+(0.01*flux[ok,j])**2))
@@ -163,13 +176,20 @@ for j in range(res.shape[1]) :  # Loop over individual pixels
     erms10[j]=np.sqrt(np.mean(1./ivar[ok,j]+(0.1*flux[ok,j])**2))
     ormask[j]=np.sum(ivar[:,j]==0)
     print(j,std,std_sky[j])
+
 # increase ormask ...
 for d in range(1,5) :
     ormask[d:-d]+=ormask[0:-2*d]+ormask[2*d:]
-
+median_flux=np.median(flux,0)
+median_sky=np.median(sky,0)
 ok=np.where((ormask==0)&(rms>0))[0]
 ok=np.where((rms>0))[0]
 wave=wave[ok]
+#flux=flux[ok]
+#ivar=ivar[ok]
+#sky=sky[ok]
+median_flux=median_flux[ok]
+median_sky=median_sky[ok]
 meanres=meanres[ok]
 rms=rms[ok]
 erms=erms[ok]
@@ -183,6 +203,6 @@ std_sky=std_sky[ok]
 
 
 
-output={'wave':wave.tolist(),'erms2':erms2.tolist(),'erms1':erms1.tolist(),'erms':erms.tolist(),'rms':rms.tolist(),'meanres':meanres.tolist(),'stds':stds.tolist(),'std_sky':std_sky.tolist()}
+output={'wave':wave.tolist(),'median_flux':median_flux.tolist(),'erms2':erms2.tolist(),'erms1':erms1.tolist(),'erms':erms.tolist(),'rms':rms.tolist(),'meanres':meanres.tolist(),'stds':stds.tolist(),'std_sky':std_sky.tolist()}
 with open(args.outfile, 'w') as outfile:
     json.dump(output, outfile)
