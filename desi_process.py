@@ -17,9 +17,20 @@ class DESI_PROCESS(object):
 python3 desi_process.py -i /global/project/projectdirs/desi/users/zhangkai/teststand/20180403/data/WINLIGHT_00007832.fits -p psf-r1.fits -c r1 -f fibermap.fits -e 00007850 -w 5622,7735,0.7
 
 python3 desi_process.py -i /global/project/projectdirs/desi/users/zhangkai/teststand/20180403/data/WINLIGHT_00007805.fits -p psf-r1.fits -c r1 -f fibermap.fits -e 00007805 -ff fiberflat-r1-4s.fits -w 5622,7735,0.7
+
+    python3 desi_process.py -i /project/projectdirs/desi/spectro/data/20191023/00020204/desi-00020204.fits.fz -p /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp3/psf-sm4-r-science-slit-20191015.fits -c r3 -f fibermap.fits -e 00020204 -ff /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp3/fiberflat-sm4-r-20191022.fits -w 5622,7735,0.7
     Should not present in formal version: 
         add_keyword.py in extract_frame
         declare_sky.py  in fit_sky. Should only be used when dealing with all sky plates. 
+
+    ##### Reducing twilight exposures. 
+    desi_preproc -i /project/projectdirs/desi/spectro/data/2019102*/00020205/desi-*.fits.fz --cam b3,r3,z3
+    desi_compute_trace_shifts -i preproc-r3-00020205.fits --psf $DESI_SPECTRO_CALIB/spec/sp3/psf-sm4-r-science-slit-20191015.fits -o psf-shifted-r3-00020205.fits
+
+    time srun -N 1 -n 20 desi_extract_spectra -i preproc-r3-00020205.fits --psf psf-shifted-r3-00020205.fits --wavelength 5635.0,7731.0,0.8 --psferr 0.05 --nwavestep 50 -o frame-r3-00020205.fits --mpi
+
+    desi_process_exposure -i frame-r3-00020205.fits --fiberflat $DESI_SPECTRO_CALIB/spec/sp3/fiberflat-sm4-r-20191022.fits -o flatfielded-frame-r3-00020205.fits
+
     """
 
     def __init__(self):
@@ -31,9 +42,7 @@ python3 desi_process.py -i /global/project/projectdirs/desi/users/zhangkai/tests
         try:
             flavor=hdulist[1].header['FLAVOR']
         except:
-            #flavor='flat'
             flavor='science'
-        #import pdb;pdb.set_trace()
         if flavor=='arc':
             self.process_arc()
         elif flavor=='flat':

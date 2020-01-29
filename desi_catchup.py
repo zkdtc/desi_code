@@ -18,7 +18,7 @@ class DESI_CATCHUP(object):
     """
 
     def __init__(self):
-        os.environ['BASEDIR']=os.environ['SCRATCH']+'/desi/realtime8'
+        os.environ['BASEDIR']=os.environ['SCRATCH']+'/desi/realtime9'
         cmd="mkdir -p "+os.environ['BASEDIR']+"/spectro/redux/daily"
         print(cmd)
         os.system(cmd) #subprocess.run(cmd,shell=True,check=True)

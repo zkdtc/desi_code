@@ -2,6 +2,7 @@ import argparse
 import os,glob
 import fitsio
 import astropy.io.fits as pyfits
+from astropy.io import fits
 import subprocess
 import pandas as pd
 import time,datetime
@@ -10,11 +11,12 @@ import psycopg2
 import hashlib
 import pdb
 import psutil
+from os import listdir
 
 class DESI_PROC_DASHBOARD(object):
     """ Code to generate the statistic of desi_pipe production status   
     Usage:
-    python3 desi_proc_dashboard.py --night 20191126 --prod_dir /global/cscratch1/sd/zhangkai/desi/ --output_dir /global/project/projectdirs/desi/www/users/zhangkai/desi_proc_dashboard/ --output_url https://portal.nersc.gov/project/desi/users/zhangkai/desi_proc_dashboard/
+    python3 desi_proc_dashboard.py --night [20191126] --n_night 10 --prod_dir /global/cscratch1/sd/zhangkai/desi/ --output_dir /global/project/projectdirs/desi/www/users/zhangkai/desi_proc_dashboard/ --output_url https://portal.nersc.gov/project/desi/users/zhangkai/desi_proc_dashboard/
     """
 
     def __init__(self):
@@ -24,17 +26,27 @@ class DESI_PROC_DASHBOARD(object):
         parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         parser = self._init_parser(parser)
         args = parser.parse_args()
-        try:
-            loc=locals()
-            cmd='nights='+args.nights
-            a=exec(cmd)
-            nights=loc['nights']
-        except:
-            nights=[]
+        if not os.getenv('DESI_SPECTRO_REDUX'):
+            os.environ['DESI_SPECTRO_REDUX']='/global/project/projectdirs/desi/spectro/redux/'
+            os.environ['DESI_SPECTRO_DATA']='/global/project/projectdirs/desi/spectro/data/'
+        if args.nights=='all':
+            nights=listdir(os.getenv('DESI_SPECTRO_REDUX')+'/daily/exposures/')
+            nights=[int(x) for x in nights]
+        else:
+            try:
+                loc=locals()
+                cmd='nights='+args.nights
+                a=exec(cmd)
+                nights=loc['nights']
+            except:
+                nights=[]
 
         tonight=self.what_night_is_it()
         if not tonight in nights:
             nights.append(tonight)
+        nights.sort(reverse=True)
+        if int(args.n_night)<=len(nights):
+            nights=nights[0:int(args.n_night)-1]
 
         prod_dir=args.prod_dir # base directory of product
         self.output_dir=args.output_dir # Portal directory for output html files
@@ -51,7 +63,7 @@ class DESI_PROC_DASHBOARD(object):
         strTable=self._initialize_page()
 
         for night in nights:
-            print
+            #print(night)
             stat_night=self.calculate_one_night(night)
             ####################################
             #### Table for individual night ####
@@ -59,8 +71,9 @@ class DESI_PROC_DASHBOARD(object):
             strTable=strTable+self._add_html_table(stat_night,str(night))
             
         timestamp=time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())
-        print(timestamp)
-        strTable=strTable+"<div style='color:#00FF00'>"+timestamp+"</div>"
+        #print(timestamp)
+        running=self.check_running()
+        strTable=strTable+"<div style='color:#00FF00'>"+timestamp+" "+"desi_dailyproc running: "+running+"</div>"
         strTable=strTable+self._add_js_script1()
         strTable=strTable+"</html>"
         hs=open(self.output_dir+"desi_proc_dashboard.html",'w')
@@ -75,45 +88,58 @@ class DESI_PROC_DASHBOARD(object):
 
     def _init_parser(self,parser):
         parser.add_argument('-n','--nights', type=str, default = None, required = False, help="nights to monitor")
+        parser.add_argument('-nn','--n_night', type=str, default = None, required = False, help="all:all nights. ifdigit: the last n nights.")
         parser.add_argument('-pd','--prod_dir', type=str, default = None, required = True, help="product base directory")
         parser.add_argument('-od','--output_dir', type=str, default = None, required = True, help="output portal directory for the html pages ")
         parser.add_argument('-ou','--output_url', type=str, default = None, required = True, help="output portal directory url ")
         return parser
 
     def calculate_one_night(self,night):
-        print('{} Checking for new files on {}'.format(time.asctime(), night))
+        #print('{} Checking for new files on {}'.format(time.asctime(), night))
         fileglob = '{}/{}/*/desi-*.fits.fz'.format(os.getenv('DESI_SPECTRO_DATA'), night)
         known_exposures = set()
         newexp = self.find_newexp(night, fileglob, known_exposures)
         expids=[t[1] for t in newexp]
-        expids.sort()
+        expids.sort(reverse=True)
         output={}
         for expid in expids:
             # Check the redux folder for reduced files 
             filename=os.getenv('DESI_SPECTRO_DATA')+'/'+str(night)+'/'+str(expid).zfill(8)+'/desi-'+str(expid).zfill(8)+'.fits.fz'
-            h1=fitsio.read_header(filename,1)
+            #h1=fitsio.read_header(filename,1)
+            h1=fits.getheader(filename,1)
             flavor=h1['flavor'].strip()
+            #import pdb;pdb.set_trace()
+            try:
+                a= h1['SPCGRPHS']
+                b=a.split(',')
+            except:
+                a='SPX'
+                b=['SPX']
+            n_spectrographs=len(b)
+
             exptime=str(h1['EXPTIME']).strip()
             try:
                 obstype=h1['OBSTYPE'].strip()
             except:
                 obstype='None' #h2=fitsio.read_header(filename,2)
-            print(expid,flavor,obstype)
+            #print(expid,flavor,obstype)
             fileglob_psf='/project/projectdirs/desi/spectro/redux/daily/exposures/'+str(night)+'/'+str(expid).zfill(8)+'/psf*.fits'
+            fileglob_fit_psf='/project/projectdirs/desi/spectro/redux/daily/exposures/'+str(night)+'/'+str(expid).zfill(8)+'/fit-psf*.fits'
             fileglob_fiberflat='/project/projectdirs/desi/spectro/redux/daily/exposures/'+str(night)+'/'+str(expid).zfill(8)+'/fiberflat*.fits'
             fileglob_frame='/project/projectdirs/desi/spectro/redux/daily/exposures/'+str(night)+'/'+str(expid).zfill(8)+'/frame*.fits'
             fileglob_sframe='/project/projectdirs/desi/spectro/redux/daily/exposures/'+str(night)+'/'+str(expid).zfill(8)+'/sframe*.fits'
             fileglob_cframe='/project/projectdirs/desi/spectro/redux/daily/exposures/'+str(night)+'/'+str(expid).zfill(8)+'/cframe*.fits'
             fileglob_sky='/project/projectdirs/desi/spectro/redux/daily/exposures/'+str(night)+'/'+str(expid).zfill(8)+'/sky*.fits'
             file_psf=sorted(glob.glob(fileglob_psf))
+            file_fit_psf=sorted(glob.glob(fileglob_fit_psf))
             file_fiberflat=sorted(glob.glob(fileglob_fiberflat))
             file_frame=sorted(glob.glob(fileglob_frame))
             file_sframe=sorted(glob.glob(fileglob_sframe))
             file_cframe=sorted(glob.glob(fileglob_cframe))
             file_sky=sorted(glob.glob(fileglob_sky))
             #import pdb;pdb.set_trace()
-            print(len(file_psf),len(file_fiberflat),len(file_frame),len(file_sframe),len(file_cframe),len(file_sky))
-            output[str(expid)]={'FLAVOR':flavor,'OBSTYPE':obstype,'EXPTIME':exptime,'n_psf':len(file_psf),'n_ff':len(file_fiberflat),'n_frame':len(file_frame),'n_sframe':len(file_sframe),'n_cframe':len(file_cframe),'n_sky':len(file_sky)}
+            #print(len(file_psf),len(file_fiberflat),len(file_frame),len(file_sframe),len(file_cframe),len(file_sky))
+            output[str(expid)]={'FLAVOR':flavor,'OBSTYPE':obstype,'EXPTIME':exptime,'SPECTROGRAPHS':a,'n_spectrographs':n_spectrographs,'n_psf':len(file_psf)+len(file_fit_psf),'n_ff':len(file_fiberflat),'n_frame':len(file_frame),'n_sframe':len(file_sframe),'n_cframe':len(file_cframe),'n_sky':len(file_sky)}
         return(output)
 
     def _initialize_page(self):
@@ -177,21 +203,28 @@ class DESI_PROC_DASHBOARD(object):
     def _add_html_table(self,table,night):
         heading="Night "+night
         strTable="<button class='collapsible'>"+heading+"</button><div class='content' style='display:inline-block;min-height:0%;'>"
-        strTable = strTable+"<table id='c'><tr><th>Expid</th><th>FLAVOR</th><th>OBSTYPE</th><th>EXPTIME</th><th>PSF File</th><th>FFlat file</th><th>frame file</th><th>sframe file</th><th>sky file</th><th>cframe file</th></tr>"
+        strTable = strTable+"<table id='c'><tr><th>Expid</th><th>FLAVOR</th><th>OBSTYPE</th><th>EXPTIME</th><th>SPECTROGRAGHS</th><th>PSF File</th><th>FFlat file</th><th>frame file</th><th>sframe file</th><th>sky file</th><th>cframe file</th></tr>"
         for i in range(len(table)):
             expid=list(table.keys())[i]
             n_expected=0
             if True:
-                #import pdb;pdb.set_trace()
-                loc=locals()
-                #cmd="n_expected=self.file_count['"+night+"']['"+self.tasktype_arr[i]+"']"
-                #a=exec(cmd)
-                #n_expected=loc['n_expected']
-                #fraction=np.array(float(table[i][3]))/np.array(float(n_expected))
+                obstype=str(table[expid]['OBSTYPE']).upper().strip()
+                n_spectrographs=int(table[expid]['n_spectrographs'])
+                if obstype=='ZERO':
+                    n_ref=[str(n_spectrographs*0),str(n_spectrographs*0),str(n_spectrographs*0),str(n_spectrographs*0),str(n_spectrographs*0),str(n_spectrographs*0)]
+                elif obstype=='ARC':
+                    n_ref=[str(n_spectrographs*3),str(n_spectrographs*0),str(n_spectrographs*0),str(n_spectrographs*0),str(n_spectrographs*0),str(n_spectrographs*0)]
+                elif obstype=='FLAT':
+                    n_ref=[str(n_spectrographs*3),str(n_spectrographs*3),str(n_spectrographs*3),str(n_spectrographs*0),str(n_spectrographs*0),str(n_spectrographs*0)]
+                elif obstype=='SKY' or obstype=='SCIENCE' or obstype=='NONE':
+                    n_ref=[str(n_spectrographs*3),str(n_spectrographs*0),str(n_spectrographs*3),str(n_spectrographs*3),str(n_spectrographs*3),str(n_spectrographs*3)]
+                elif obstype=='TWILIGHT':
+                    n_ref=[str(n_spectrographs*3),str(n_spectrographs*0),str(n_spectrographs*3),str(n_spectrographs*0),str(n_spectrographs*0),str(n_spectrographs*0)]
+                else:
+                    n_ref=[str(n_spectrographs*0),str(n_spectrographs*0),str(n_spectrographs*0),str(n_spectrographs*0),str(n_spectrographs*0),str(n_spectrographs*0)]
+
                 color="green"
-                #if fraction<1.0:
-                #    color="red"
-                str_row="<tr><td>"+expid+"</td><td>"+str(table[expid]['FLAVOR'])+"</td><td>"+str(table[expid]['OBSTYPE'])+"</td><td>"+str(table[expid]['EXPTIME'])+"</td><td>"+str(table[expid]['n_psf'])+"</td><td>"+str(table[expid]['n_ff'])+"</td><td>"+str(table[expid]['n_frame'])+"</td><td>"+str(table[expid]['n_sframe'])+"</td><td>"+str(table[expid]['n_sky'])+"</td><td>"+str(table[expid]['n_cframe'])+"</td></tr>"
+                str_row="<tr><td>"+expid+"</td><td>"+str(table[expid]['FLAVOR'])+"</td><td>"+str(table[expid]['OBSTYPE'])+"</td><td>"+str(table[expid]['EXPTIME'])+"</td><td>"+table[expid]['SPECTROGRAPHS']+"</td><td>"+str(table[expid]['n_psf'])+'/'+n_ref[0]+"</td><td>"+str(table[expid]['n_ff'])+'/'+n_ref[1]+"</td><td>"+str(table[expid]['n_frame'])+'/'+n_ref[2]+"</td><td>"+str(table[expid]['n_sframe'])+'/'+n_ref[3]+"</td><td>"+str(table[expid]['n_sky'])+'/'+n_ref[4]+"</td><td>"+str(table[expid]['n_cframe'])+'/'+n_ref[5]+"</td></tr>"
                 strTable=strTable+str_row
             else:
                 pass
@@ -335,6 +368,13 @@ class DESI_PROC_DASHBOARD(object):
             if (night, expid) not in known_exposures:
                 newexp.append( (night, expid) )
         return set(newexp)
+    def check_running(self):
+        a=psutil.process_iter()
+        running='No'
+        for p in a:
+            if 'desi_dailyproc' in ' '.join(p.cmdline()):
+                running='Yes'
+        return running
 
         
 if __name__=="__main__":
