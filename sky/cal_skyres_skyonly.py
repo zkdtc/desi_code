@@ -15,7 +15,7 @@ from teststand.graph_tools import parse_fibers
 from scipy.optimize import curve_fit
 from scipy import asarray as ar,exp
 import json
-
+import copy
 def reshape(itmp) :
     tmp=np.array(itmp)
     tmp=tmp.reshape((tmp.shape[0]*tmp.shape[1],tmp.shape[2]))
@@ -108,7 +108,7 @@ fflux_arr=np.array(fflux_arr)
 ivar=np.array(ivar)
 sky=np.array(sky)
 res = flux - sky
-res_stack=np.sum(res_stack,axis=0)
+res_stack=np.sum(res,axis=0)/len(res)
 median_res=np.median(res,1)
 good_fiber=np.where(np.abs(median_res-np.median(res))<5*np.std(median_res))
 good_fiber=np.where(np.abs(median_res-np.median(res))<5*np.std(median_res[good_fiber]))
@@ -248,6 +248,8 @@ median_sky=np.median(sky,0)
 # Select only good pixels
 ok=np.where((ormask==0)&(rms>0))[0]
 ok=np.where((rms>0))[0]
+wave0=copy.copy(wave)
+res_stack0=copy.copy(res_stack)
 wave=wave[ok]
 #flux=flux[ok]
 #ivar=ivar[ok]
@@ -269,6 +271,6 @@ std_sky=std_sky[ok]
 
 
 
-output={'wave':wave.tolist(),'median_flux':median_flux.tolist(),'median_fflux':median_fflux.tolist(),'res_stack':res_stack.tolist(),'erms2':erms2.tolist(),'erms1':erms1.tolist(),'erms':erms.tolist(),'rms':rms.tolist(),'meanres':meanres.tolist(),'stds':stds.tolist(),'errors_mean':errors_mean.tolist(),'std_sky':std_sky.tolist()}
+output={'wave':wave.tolist(),'median_flux':median_flux.tolist(),'median_fflux':median_fflux.tolist(),'res_stack':res_stack.tolist(),'erms2':erms2.tolist(),'erms1':erms1.tolist(),'erms':erms.tolist(),'rms':rms.tolist(),'meanres':meanres.tolist(),'stds':stds.tolist(),'errors_mean':errors_mean.tolist(),'std_sky':std_sky.tolist(),'wave0':wave0.tolist(),'res_stack0':res_stack0.tolist()}
 with open(args.outfile, 'w') as outfile:
     json.dump(output, outfile)
