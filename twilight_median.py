@@ -21,7 +21,7 @@ sp_arr=['9']
 sm_arr=['3']
 
 
-new=False #True
+new=True  # True if you want to create a new fiberflat
 """
 infile_b3='/global/project/projectdirs/desi/spectro/redux/daily/exposures/20191217/fiberflatnight-b3-20191217.fits' #'/software/datasystems/desi_spectro_calib/trunk/spec/sp3/fiberflat-sm4-b-20191022.fits'
 infile_r3='/global/project/projectdirs/desi/spectro/redux/daily/exposures/20191217/fiberflatnight-r3-20191217.fits'
@@ -33,22 +33,26 @@ outfile_z3='fiberflat-sm4-z-20191217.fits'
 
 data_dir="/global/project/projectdirs/desi/spectro/redux/daily/exposures/20191219/"
 expid_arr=['00033801']#['00022422','00022423','00022424','00022426','00022428','00022429','00022430','00022431','00022432','00022433','00022434','00022435','00022436'] #["00020206","00020207","00020208","00020209","00020210","00020211","00020212"]
+
+data_dir="/global/project/projectdirs/desi/spectro/redux/daily/exposures/20200127/"
+expid_arr=['00044457']
+ff_tail='20200125'
 """
+
+data_dir="/global/project/projectdirs/desi/users/zhangkai/twilight/20200315/"
+expid_arr=['00055560']
+ff_tail='20200307-20200315'
 
 for num in range(len(sp_arr)):
     sp=sp_arr[num]
     sm=sm_arr[num]
-    infile_b='/project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sm'+sm+'/fiberflatnight-b'+sp+'-20200125.fits'
-    infile_r='/project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sm'+sm+'/fiberflatnight-r'+sp+'-20200125.fits'
-    infile_z='/project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sm'+sm+'/fiberflatnight-z'+sp+'-20200125.fits'
+    infile_b='/project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sm'+sm+'/fiberflatnight-b'+sp+'-'+ff_tail+'.fits'
+    infile_r='/project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sm'+sm+'/fiberflatnight-r'+sp+'-'+ff_tail+'.fits'
+    infile_z='/project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sm'+sm+'/fiberflatnight-z'+sp+'-'+ff_tail+'.fits'
 
-    outfile_b='fiberflat-sm'+sm+'-b-20200127.fits'
-    outfile_r='fiberflat-sm'+sm+'-r-20200127.fits'
-    outfile_z='fiberflat-sm'+sm+'-z-20200127.fits'
-
-    data_dir="/global/project/projectdirs/desi/spectro/redux/daily/exposures/20200127/"
-    expid_arr=['00044457']
-
+    outfile_b='fiberflat-sm'+sm+'-b-'+ff_tail+'.fits'
+    outfile_r='fiberflat-sm'+sm+'-r-'+ff_tail+'.fits'
+    outfile_z='fiberflat-sm'+sm+'-z-'+ff_tail+'.fits'
 
     fiberflat_b=read_fiberflat(infile_b)
     fiberflat_r=read_fiberflat(infile_r)

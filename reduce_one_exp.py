@@ -6,8 +6,23 @@ import numpy as np
 
 import sys
 night_arr=['20200315']
-expid='00055709'
+expid='00055709' #arc
+expid='00055556' #twilight
+expid='00055589' # science
+#expid='00055713' # flat
 add_keyword=' --scattered-light'
+
+expid='00055555' # zero
+add_keyword=''
+
+night_arr=['20191231']
+expid='00037053' # zero
+add_keyword=''
+
+night_arr=['20191110']
+expid='00026341'
+add_keyword=''
+
 n_night=len(night_arr)
 
 if True:

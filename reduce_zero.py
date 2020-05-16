@@ -29,7 +29,7 @@ if True:
                     for cam in cam_arr:
                         for sp in sp_arr:
                             camera=cam+sp
-                            cmd='desi_preproc -i $DESI_SPECTRO_DATA/'+night+'/'+expid+'/desi-'+expid+'.fits.fz -o '+outdir+'/'+expid+'/preproc-'+expid+'-'+camera+'.fits --cameras '+camera
+                            cmd='desi_preproc -i $DESI_SPECTRO_DATA/'+night+'/'+expid+'/desi-'+expid+'.fits.fz -o '+outdir+'/'+expid+'/preproc-'+camera+'-'+expid+'.fits --cameras '+camera
                             a=os.system(cmd)
             except:
                 pass

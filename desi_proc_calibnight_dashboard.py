@@ -17,6 +17,7 @@ class DESI_PROC_CALIBNIGHT_DASHBOARD(object):
     """ Code to generate the statistic of desi_pipe calibnight status   
     Usage:
     python3 desi_proc_calibnight_dashboard.py --nights 2020125,20200127 --n_nights 100 --prod_dir /global/cscratch1/sd/zhangkai/desi/ --output_dir /global/project/projectdirs/desi/www/users/zhangkai/desi_proc_calibnight_dashboard/
+    python3 desi_proc_calibnight_dashboard.py --nights all --n_nights 100 --prod_dir /global/cscratch1/sd/zhangkai/desi/ --output_dir /global/project/projectdirs/desi/www/users/zhangkai/desi_proc_calibnight_dashboard/
     """
 
     def __init__(self):
@@ -33,6 +34,8 @@ class DESI_PROC_CALIBNIGHT_DASHBOARD(object):
         if args.nights=='all':
             nights=listdir(os.getenv('DESI_SPECTRO_REDUX')+'/'+os.getenv('SPECPROD')+'/calibnight/')
             nights=[int(x) for x in nights]
+            print(os.getenv('DESI_SPECTRO_REDUX')+'/'+os.getenv('SPECPROD')+'/calibnight/')
+            print(nights)
         else:
             try:
                 print(args.nights)
