@@ -49,6 +49,18 @@ zmax=20
 expid='00055555' # zero
 add='zero'
 zmax=5
+
+night2='20191231'
+expid2='00037053' # zero
+
+night='20191110'
+expid='00026967'
+night2='20191110'
+expid2='00026341' # dark
+add='zero_dark'
+night2='20191110'
+expid2='00026971' # arc
+add='zero_arc'
 """
 ####################################################
 # arcs with different exposure time  
@@ -101,12 +113,12 @@ night='20191212'
 expid='00031357' # arc
 add='arc'
 zmax=5
-"""
 ########## Long darks ############
 night='20191110'
 expid='00026341' # dark
 add='dark'
 zmax=50
+"""
 
 sp_arr=['0', '1','2','3','4','5','6','7','8','9']
 sm_arr=['4','10','5','6','1','9','7','8','2','3']
@@ -115,8 +127,13 @@ cam_arr=['b','r','z']
 #camera='b0'
 file_raw1=raw_dir1+'/'+night+'/'+expid+'/desi-'+expid+'.fits.fz'
 hdul1=fits.open(file_raw1)
+file_raw2=raw_dir1+'/'+night2+'/'+expid2+'/desi-'+expid2+'.fits.fz'
+try:
+    hdul2=fits.open(file_raw2)
+except:
+    pass
 
-with PdfPages('check_raw_'+night+'_'+add+'.pdf') as pdf:
+with PdfPages('check_two_raw_'+night+'_'+add+'.pdf') as pdf:
     for cam in cam_arr:
         for i in range(len(sp_arr)):
             plt.figure(figsize=(12,22))
@@ -132,18 +149,29 @@ with PdfPages('check_raw_'+night+'_'+add+'.pdf') as pdf:
                 hdul_this=hdul1[camera.upper()]
             except:
                 continue
+            try:
+                hdul_this2=hdul2[camera.upper()]
+            except:
+                pass
             nx=len(hdul_this.data)
             x=np.arange(nx)
             y_hat1 = np.median(hdul_this.data[:,1400:2400],axis=1)
             y_hat3=np.median(hdul_this.data[1400:2400,:],axis=0)
-
+            try:
+                y_hat2 = np.median(hdul_this2.data[:,1400:2400],axis=1)
+                y_hat4=np.median(hdul_this2.data[1400:2400,:],axis=0)
+            except:
+                pass
             # Filter the data, and plot both the original and filtered signals.
             #y_filter = butter_lowpass_filter(y_hat1, cutoff, fs, order)
             y_filter= savgol_filter(y_hat1, 101, 2)
 
             plt.subplot(3,1,1)
-            plt.plot(x,y_hat1,label='Raw')
-
+            plt.plot(x,y_hat1,label='Raw1')
+            try:
+                plt.plot(x,y_hat2,label='Raw2')
+            except:
+                pass
             #plt.plot(x,y_filter,color='red',label='Fitered')
             plt.axis([-20,4200,np.median(y_hat1)-20,max(y_hat1)+10])
             plt.yscale('linear')
@@ -155,6 +183,10 @@ with PdfPages('check_raw_'+night+'_'+add+'.pdf') as pdf:
 
             plt.subplot(3,1,2)
             plt.plot(y_hat3,label='With scattered light')
+            try:
+                plt.plot(x,y_hat4,label='Raw2')
+            except:
+                pass
             plt.axis([-20,4300,np.median(y_hat3)-20,max(y_hat3)+10])
             plt.yscale('linear')
             #plt.yscale('log')
