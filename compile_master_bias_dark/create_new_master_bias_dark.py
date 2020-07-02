@@ -34,7 +34,9 @@ from os import listdir
 ##########################################
 
 night_arr=['20200607','20200608','20200609']  # Nights to search for raw exposures.
-exptime_set_arr=[1200,1000,900,700,450,400,350,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10,9,8,7,6,5,4,3,2,1,0]  # Exposure time grid
+exptime_set_arr=[1200,1000,900,700,450,400,350,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10,9,8,7,6,5,4,3,2,1,0]  # Exposure time 37 point grid
+exptime_set_arr=[1200,900,450,300,200,140,100,50,20,10,6,3,2,1,0]  # Exposure time 15 point grid
+
 exp_reject=[''] # Exposure time to reject 
 output_prefix='master-bias-dark-20200607-' # Final output file prefix. The output file will be output_prefix+camera+.fits
 output_dir='' # output direcotry. If current directory, use ''. Otherwise, use 
@@ -46,7 +48,7 @@ cam_arr=['b','r','z']
 ##############################################################################################
 ############### Search all exposures with a specific exptime and compile them ################
 ##############################################################################################
-
+"""
 for exptime_set in exptime_set_arr:
     
     filename_list=''
@@ -76,7 +78,7 @@ for exptime_set in exptime_set_arr:
             cmd='desi_compute_bias -i '+filename_list+' -o '+output_dir+'master_bias_dark_'+camera+'_'+str(int(exptime_set))+'.fits --camera '+camera
             print(cmd)
             os.system(cmd)
-
+"""
 
 ##############################################################################################
 ############### Compile the exposures at a specific exptime to a single file  ################
