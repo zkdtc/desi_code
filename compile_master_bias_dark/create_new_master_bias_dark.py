@@ -11,6 +11,7 @@ import psycopg2
 import hashlib
 import pdb
 from os import listdir
+import matplotlib.pyplot as plt
 
 """
 ###################################################
@@ -35,20 +36,27 @@ from os import listdir
 
 night_arr=['20200607','20200608','20200609']  # Nights to search for raw exposures.
 exptime_set_arr=[1200,1000,900,700,450,400,350,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10,9,8,7,6,5,4,3,2,1,0]  # Exposure time 37 point grid
-exptime_set_arr=[1200,900,450,300,200,140,100,50,20,10,6,3,2,1,0]  # Exposure time 15 point grid
+exptime_set_arr=[1200,900,450,300,200,140,100,50,20,10,1,0]  # Exposure time 15 point grid
 
 exp_reject=[''] # Exposure time to reject 
 output_prefix='master-bias-dark-20200607-' # Final output file prefix. The output file will be output_prefix+camera+.fits
 output_dir='' # output direcotry. If current directory, use ''. Otherwise, use 
 
+
+night_arr=['20200728','20200729','20200730']
+exptime_set_arr=[0,1,2,3,5,7,10,20,40,60,80,100,200,300,450,700,900,1200]
+
+exp_reject=[''] # Exposure time to reject
+output_prefix='master-bias-dark-20200728-' # Final output file prefix. The output file will be output_prefix+camera+.fits
+output_dir='' # output direcotry. If current directory, use ''. Otherwise, use
+
+
 sp_arr=['0', '1','2','3','4','5','6','7','8','9']
 sm_arr=['4','10','5','6','1','9','7','8','2','3']
 cam_arr=['b','r','z']
-
 ##############################################################################################
 ############### Search all exposures with a specific exptime and compile them ################
 ##############################################################################################
-"""
 for exptime_set in exptime_set_arr:
     
     filename_list=''
@@ -78,7 +86,6 @@ for exptime_set in exptime_set_arr:
             cmd='desi_compute_bias -i '+filename_list+' -o '+output_dir+'master_bias_dark_'+camera+'_'+str(int(exptime_set))+'.fits --camera '+camera
             print(cmd)
             os.system(cmd)
-"""
 
 ##############################################################################################
 ############### Compile the exposures at a specific exptime to a single file  ################
@@ -92,12 +99,43 @@ for cam in cam_arr:
         output=output_dir+output_prefix+camera+'.fits'
         print(camera)
         print(output)
+        cutout_flux=[]
         try:
             for exptime_set in exptime_set_arr:
                 filename=output_dir+'master_bias_dark_'+camera+'_'+str(int(exptime_set))+'.fits'
                 hdu_this = fits.open(filename)
+                """
+                ## Compress to 8 or 16 bits ##
+                #import pdb;pdb.set_trace()
+                data=hdu_this[0].data
+                index1=np.where(data>15)
+                index2=np.where(data<-10)
+                data[index1]=15
+                data[index2]=-10
+                #print(len(index))
+                #data[index]=100000
+                cutout_flux.append(np.median(data[4140:,2450:2550]))
+                #plt.imshow(data[4140:,2450:2550],vmin=-10,vmax=100)
+                plt.imshow(data,vmin=-10,vmax=15)
+                plt.title(camera+' '+str(exptime_set)+'s')
+                plt.colorbar()
+                plt.show()
+    
+                plt.hist(data,100)
+                plt.yscale('log')
+                plt.title(camera+' '+str(exptime_set))
+                plt.xlabel('Counts')
+                plt.ylabel('N')
+                plt.show()
+                """
+                ## Store the max and min in the header ##
+
                 dataHDU = fits.ImageHDU(hdu_this[0].data, header=hdu_this[0].header, name=str(exptime_set))
                 hdus.append(dataHDU)
+            #plt.plot(exptime_set_arr,cutout_flux)
+            #plt.xlabel('exptime')
+            #plt.ylabel('Median Flux')
+            #plt.show()
             hdus.writeto(output)
         except:
             pass

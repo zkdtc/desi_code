@@ -13,6 +13,8 @@ import pdb
 from os import listdir
 
 night_arr=['20200607','20200608','20200609']
+night_arr=['20200729']
+night_arr=['20200730']
 
 expid_all=[]
 exptime_all=[]
@@ -47,5 +49,15 @@ n=len(expid_all)
 for i in range(n):
     ind_this=ind[i]
     print(night_all[ind_this],expid_all[ind_this],flavor_all[ind_this],exptime_all[ind_this])
+
+output_str="["
+for i in range(len(expid_all)):
+    if i==0:
+        output_str=output_str+"'"+expid_all[i]
+    else:
+        output_str=output_str+"','"+expid_all[i]
+output_str=output_str+"']"
+
+print(output_str)
 
 
