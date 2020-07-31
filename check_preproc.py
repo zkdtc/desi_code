@@ -9,28 +9,12 @@ from matplotlib.backends.backend_pdf import PdfPages
 from scipy.signal import butter, lfilter, freqz
 from scipy.signal import savgol_filter
 
-def butter_lowpass(cutoff, fs, order=5):
-    nyq = 0.5 * fs
-    normal_cutoff = cutoff / nyq
-    b, a = butter(order, normal_cutoff, btype='low', analog=False)
-    return b, a
-
-def butter_lowpass_filter(data, cutoff, fs, order=5):
-    b, a = butter_lowpass(cutoff, fs, order=order)
-    y = lfilter(b, a, data)
-    return y
-
-# Filter requirements.
-order = 3
-fs = 10.0       # sample rate, Hz
-cutoff = 0.1# 3.667  # desired cutoff frequency of the filter, Hz
-
-# Get the filter coefficients so we can check its frequency response.
-b, a = butter_lowpass(cutoff, fs, order)
-
-
 preproc_dir2='/project/projectdirs/desi/spectro/redux/daily/preproc/'
 preproc_dir1='//global/project/projectdirs/desi/users/zhangkai/redux_one_exp/'
+
+preproc_dir1='/global/project/projectdirs/desi/users/zhangkai/redux_test/'
+preproc_dir1='/global/project/projectdirs/desi/users/zhangkai/redux_nodark/'
+
 ####################################################
 # Perffect night 20200315 before covid-19 shutdown
 ####################################################
@@ -112,8 +96,31 @@ sp_arr=['0', '1','2','3','4','5','6','7','8','9']
 sm_arr=['4','10','5','6','1','9','7','8','2','3']
 cam_arr=['b','r','z']
 
-#camera='b0'
-with PdfPages('check_scattered_light_'+night+'_'+add+'.pdf') as pdf:
+
+
+
+
+########## Long darks taken on 20200608-0609 ############
+night='20200608'
+expid='00056617' # 1200s dark
+add='dark'
+zmax=20
+
+expid='00056664' # 200s dark
+add='dark'
+zmax=20
+
+night="20200608"
+expid="00056626" # 900s dark
+
+night="20200609"
+expid="00056908" # 400s for interpolation test
+
+sp_arr=['0', '1','2','3','4','5','6','7','8','9']
+sm_arr=['4','10','5','6','1','9','7','8','2','3']
+cam_arr=['b','r','z']
+
+with PdfPages('check_preproc_'+night+'_'+expid+'_'+add+'.pdf') as pdf:
     for cam in cam_arr:
         for i in range(len(sp_arr)):
             plt.figure(figsize=(12,22))
@@ -162,10 +169,10 @@ with PdfPages('check_scattered_light_'+night+'_'+add+'.pdf') as pdf:
                 pass
 
             plt.subplot(3,1,1)
-            plt.plot(x,y_hat1,label='With scattered light')
+            plt.plot(x,y_hat1,label='preproc image')
             plt.plot(x,y_dark,label='master dark*exptime',color='black')
             plt.plot(y_bias,label='master bias',color='red')
-
+            plt.title('EXPID:'+expid+' EXPTIME='+str(hdul1[0].header['EXPTIME']))
             print('Try3')
             try:
                 plt.plot(x,y_hat2,label='scattered light remove on')
@@ -177,11 +184,11 @@ with PdfPages('check_scattered_light_'+night+'_'+add+'.pdf') as pdf:
             #plt.yscale('log')
             plt.xlabel('CCD row')
             plt.ylabel('electron/pix')
-            plt.title(expid+' '+camera)
+            plt.title(expid+' '+camera+' EXPTIME='+str(hdul1[0].header['EXPTIME']))
             plt.legend(loc=0)
 
             plt.subplot(3,1,2)
-            plt.plot(y_hat3,label='With scattered light')
+            plt.plot(y_hat3,label='preproc image')
             print('Try4')
             try:
                 plt.plot(y_hat4,label='scattered light remove on')
@@ -199,6 +206,8 @@ with PdfPages('check_scattered_light_'+night+'_'+add+'.pdf') as pdf:
             plt.imshow(hdul1[0].data,vmin=0,vmax=zmax)
             plt.title(expid+' '+camera)
             plt.colorbar()
+
+            plt.tight_layout()
             pdf.savefig()
             plt.close()
 
