@@ -18,10 +18,11 @@ from desispec.maskedmedian import masked_median
 from desispec import preproc
 from astropy.io import fits
 import matplotlib.pyplot as plt
+from os import listdir
 
 
 night='20200315'
-expid='00055692'
+expid='00055690'
 filename=os.getenv('DESI_SPECTRO_DATA')+'/'+str(night)+'/'+str(expid).zfill(8)+'/desi-'+str(expid).zfill(8)+'.fits.fz'
 primary_header=fits.getheader(filename,1)
 #flavor=h1['flavor'].strip()
@@ -146,6 +147,34 @@ def cal_rdnoise(hdul,camera,ccd_calibration_filename,use_overscan_row,overscan_p
             median_rdnoise  = np.median(rdnoise)
             median_overscan = np.median(overscan_col)
     return rdnoise,median_rdnoise
+
+def calculate_one_night(night):
+    #print('{} Checking for new files on {}'.format(time.asctime(), night))
+    expids=listdir(os.getenv('DESI_SPECTRO_REDUX')+'/daily/preproc/'+str(night)+'/')
+    expids.sort(reverse=True)
+    output={}
+    for expid in expids:
+        # Check the redux folder for reduced files 
+        filename=os.getenv('DESI_SPECTRO_REDUX')+'/daily/'+str(night)+'/'+str(expid).zfill(8)+'/desi-'+str(expid).zfill(8)+'.fits.fz'
+
+
+    return expids
+
+"""
+### Find all nights ###
+
+nights=listdir(os.getenv('DESI_SPECTRO_REDUX')+'/daily/preproc/')
+nights=[int(x) for x in nights]
+
+for night in nights:
+    expids=calculate_one_night(night)
+    print(expids)
+
+import pdb;pdb.set_trace()
+"""
+
+
+
 
 for cam in cam_arr:
     for i in range(n_sp):

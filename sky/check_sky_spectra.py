@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
 """
-./cal_skyres_skyonly.py -i /project/projectdirs/desi/spectro/redux/daily/exposures/20191111/00027278/frame-r6-00027278.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp6/fiberflat-sm7-r-20191108.fits -o test.dat -m rough
+./check_sky_spectra.py -i /project/projectdirs/desi/spectro/redux/daily/exposures/20191111/00027278/frame-r6-00027278.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp6/fiberflat-sm7-r-20191108.fits -o test.dat -m rough
 
-./cal_skyres_skyonly.py -i /project/projectdirs/desi/spectro/redux/daily/exposures/20191112/00027405/frame-r6-00027405.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp6/fiberflat-sm7-r-20191108.fits -o test.dat -m rough
+./check_sky_spectra.py -i /project/projectdirs/desi/spectro/redux/daily/exposures/20191111/00027301/frame-z7-00027301.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp7/fiberflat-sm8-z-20191108.fits -o frame-z7-00027301.fits.dat -m rough
 
-./cal_skyres_skyonly.py -i /project/projectdirs/desi/spectro/redux/daily/exposures/20191111/00027301/frame-z7-00027301.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sp7/fiberflat-sm8-z-20191108.fits -o frame-z7-00027301.fits.dat -m rough
+./check_sky_spectra.py -i /project/projectdirs/desi/spectro/redux/andes/exposures/20200315/00055589/frame-z1-00055589.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sm10/fiberflatnight-z1-20200307-20200315.fits -o frame-z1-00055589.fits_skyonly.dat  -m rough
 
-.cal_skyres_skyonly.py -i/project/projectdirs/desi/spectro/redux/andes/exposures/20200315/00055589/frame-z1-00055589.fits --fiberflat /project/projectdirs/desi/spectro/desi_spectro_calib/trunk/spec/sm10/fiberflatnight-z1-20200307-20200315.fits -o frame-z1-00055589.fits_skyonly.dat  -m rough
 """
 
 import os,sys,glob
@@ -49,12 +48,14 @@ std_method=args.std_method
 
 for filename in args.infile :
     print(filename)
-    h=pyfits.open(filename)
+    h=pyfits.open(filename) # ***************Frame files
     wave=h["WAVELENGTH"].data
     fibers=np.where(h["FIBERMAP"].data["OBJTYPE"]=="SKY")[0] # sky fibers   
-    #fibers=np.arange(h["FIBERMAP"].data["OBJTYPE"].size)
+    fibers=np.arange(h["FIBERMAP"].data["OBJTYPE"].size)
     #print("ONLY SOME FIBERS") ; fibers=fibers[fibers<10] 
     fibers_sky=np.where(h["FIBERMAP"].data["OBJTYPE"]=="SKY")[0]
+    x_all=h['FIBERMAP'].data['FIBERASSIGN_X']
+    y_all=h['FIBERMAP'].data['FIBERASSIGN_Y']
     print("fibers=",fibers,len(fibers))
     print("sky_fibers=",fibers_sky,len(fibers_sky))
     if fibers.size == 0 :
@@ -68,12 +69,12 @@ for filename in args.infile :
         print("no",sky_filename)
         continue
     print(sky_filename)
-    h_sky=pyfits.open(sky_filename)
-    
+    h_sky=pyfits.open(sky_filename) # ****************Sky files
+ 
     # find corresponding fiberflat
     fiberflat_filename=args.fiberflat
     print(fiberflat_filename)
-    h_fiberflat = pyfits.open(fiberflat_filename)
+    h_fiberflat = pyfits.open(fiberflat_filename) #****************** Fiberflat
     for fiber in fibers :
         
         fflux=h[0].data[fiber]
@@ -106,12 +107,23 @@ for filename in args.infile :
     h.close()
     h_sky.close()
     h_fiberflat.close()
+    x=x_all[fibers]
+    y=y_all[fibers]
+
 
 flux=np.array(flux)
 fflux_arr=np.array(fflux_arr)
 ivar=np.array(ivar)
 sky=np.array(sky)
+
 res = flux - sky
+z=np.median(res,axis=1)
+plt.subplot(1,1,1)
+plt.scatter(x, y, c=z, alpha=0.5,vmin=-10,vmax=10)
+plt.colorbar()
+plt.show()
+import pdb;pdb.set_trace()
+
 res_stack=np.sum(res,axis=0)/len(res)
 median_res=np.median(res,1)
 good_fiber=np.where(np.abs(median_res-np.median(res))<5*np.std(median_res))
