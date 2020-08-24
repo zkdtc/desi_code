@@ -14,7 +14,7 @@ preproc_dir1='//global/project/projectdirs/desi/users/zhangkai/redux_one_exp/'
 
 preproc_dir1='/global/project/projectdirs/desi/users/zhangkai/redux_test/'
 preproc_dir1='/global/project/projectdirs/desi/users/zhangkai/redux_nodark/'
-
+preproc_dir1='/global/project/projectdirs/desi/users/zhangkai/redux_nodark_newbias/'
 ####################################################
 # Perffect night 20200315 before covid-19 shutdown
 ####################################################
@@ -113,6 +113,8 @@ zmax=20
 night="20200608"
 expid="00056626" # 900s dark
 
+night='20200609'
+expid=""
 night="20200609"
 expid="00056908" # 400s for interpolation test
 
@@ -136,7 +138,7 @@ with PdfPages('check_preproc_'+night+'_'+expid+'_'+add+'.pdf') as pdf:
             file_dark2='/project/projectdirs/desi/spectro/desi_spectro_calib/trunk/ccd/dark-sm'+sm_arr[i]+'-'+cam+'-20200209.fits'
             file_bias='/project/projectdirs/desi/spectro/desi_spectro_calib/trunk/ccd/bias-sm'+sm_arr[i]+'-'+cam+'-20191021.fits'
             file_bias2='/project/projectdirs/desi/spectro/desi_spectro_calib/trunk/ccd/bias-sm'+sm_arr[i]+'-'+cam+'-20200123.fits'
-            file_preproc2=''#preproc_dir2+'/'+night+'/'+expid+'/preproc-'+camera+'-'+expid+'.fits'
+            file_preproc2=preproc_dir2+'/'+night+'/'+expid+'/preproc-'+camera+'-'+expid+'.fits'
             print('Try1')
             try:
                 hdul1=fits.open(file_preproc1)
@@ -170,12 +172,12 @@ with PdfPages('check_preproc_'+night+'_'+expid+'_'+add+'.pdf') as pdf:
 
             plt.subplot(3,1,1)
             plt.plot(x,y_hat1,label='preproc image')
-            plt.plot(x,y_dark,label='master dark*exptime',color='black')
-            plt.plot(y_bias,label='master bias',color='red')
+            #plt.plot(x,y_dark,label='master dark*exptime',color='black')
+            #plt.plot(y_bias,label='master bias',color='red')
             plt.title('EXPID:'+expid+' EXPTIME='+str(hdul1[0].header['EXPTIME']))
             print('Try3')
             try:
-                plt.plot(x,y_hat2,label='scattered light remove on')
+                plt.plot(x,y_hat2,label='New Bias')
             except:
                 pass
             #plt.plot(x,y_filter,color='red',label='Fitered')
