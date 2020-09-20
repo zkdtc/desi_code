@@ -43,11 +43,11 @@ output_prefix='master-bias-dark-20200607-' # Final output file prefix. The outpu
 output_dir='' # output direcotry. If current directory, use ''. Otherwise, use 
 
 
-night_arr=['20200728','20200729','20200730']
+night_arr=['20200728','20200729','20200730','20200607','20200608','20200609']
 exptime_set_arr=[0,1,2,3,5,7,10,20,40,60,80,100,200,300,450,700,900,1200]
 
 exp_reject=[''] # Exposure time to reject
-output_prefix='master-bias-dark-20200728-' # Final output file prefix. The output file will be output_prefix+camera+.fits
+output_prefix='master-bias-dark-20200607-20200728-' # Final output file prefix. The output file will be output_prefix+camera+.fits
 output_dir='' # output direcotry. If current directory, use ''. Otherwise, use
 
 
