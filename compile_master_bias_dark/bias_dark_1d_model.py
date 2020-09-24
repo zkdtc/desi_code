@@ -5,10 +5,53 @@ import numpy as np
 import copy
 import desispec.preproc
 
-camera_arr=['b0','b1','b2','b3','b4','b5','b6','b7','b8','b9']
-camera_arr=['b0','z0']
+camera_arr=['b0','b1','b2','b3','b4','b5','b6','b7','b8','b9','r0','r1','r2','r3','r4','r5','r6','r7','r8','r9','z0','z1','z2','z3','z4','z5','z6','z7','z8','z9']
+camera_arr=['b0']
 res=10
-plot=False
+plot=True # False
+
+def calculate_dark(exp_arr,image_arr,dark_init):
+    n_images=len(image_arr)
+    n0=image_arr[0].shape[0]
+    n1=image_arr[0].shape[1]
+    # model
+    profiles={}
+    for i in range(n_images):
+        profiles[exp_arr[i]]=np.zeros(n0)
+    dark=dark_init #np.zeros((n0,n1))
+    niterations=10
+    for iteration in range(niterations) :
+        print(iteration)
+
+        # fit profile
+        for image,exptime in zip(image_arr,exp_arr) :
+            print(exptime)
+            val = np.mean(image-exptime * dark,axis=1) # do better than that (oulier rejection but not only median)
+            profiles[exptime] = val
+            #plt.plot(val)
+            #plt.show()
+
+
+    # fit dark
+        A = np.zeros((2,2))
+        b0  = np.zeros((n0,n1))
+        b1  = np.zeros((n0,n1))
+
+        for image,exptime in zip(image_arr,exp_arr) :
+            print(exptime)
+            res = image - np.transpose(np.tile(profiles[exptime],(n1,1)))
+            A[0,0] += 1
+            A[0,1] += exptime
+            A[1,0] += exptime
+            A[1,1] += exptime**2
+            b0 += res
+            b1 += res*exptime
+        Ai = np.linalg.inv(A)
+        # const + exptime * dark
+        const = Ai[0,0]*b0 + Ai[0,1]*b1
+        dark  = Ai[1,0]*b0 + Ai[1,1]*b1
+    return dark
+
 def calculate_dark_fast(exp_arr,image_arr,res=res):
     n_exp=len(exp_arr)
     nx=len(image_arr[0])
@@ -25,7 +68,6 @@ def calculate_dark_fast(exp_arr,image_arr,res=res):
             end_y=min([res*j+res,ny-1])
             for k in range(n_exp):
                 y_temp.append(np.median(image_arr[k][res*i:end_x,res*j:end_y].ravel()))
-            print(i,j,end_x,end_y,y_temp)
             z=np.polyfit(exp_arr,y_temp,1)
             output[res*i:end_x,res*j:end_y]=z[0]
 
@@ -52,7 +94,9 @@ for camera in camera_arr:
     for exp in exp_arr:
         image_arr.append(hdu_this[str(exp)].data)
 
-    dark=calculate_dark_fast(exp_arr,image_arr)
+    dark_init=calculate_dark_fast(exp_arr,image_arr)
+    dark=calculate_dark(exp_arr,image_arr,dark_init)
+
     hdr_dark = fits.Header()
     hdr_dark['RES']=str(res)
     dataHDU = fits.ImageHDU(dark,header=hdr_dark, name='dark')
@@ -62,6 +106,7 @@ for camera in camera_arr:
     for hdu in hdu_this:
         if hdu.name !='0' and hdu.name !='DARK':
             exptime_arr.append(hdu.name)
+    exptime_arr=['1200']
     for exptime in exptime_arr:
 
         ###### Pass1 subtract bias #######
@@ -94,7 +139,7 @@ for camera in camera_arr:
         # Store pass3 stddev
         hdu_this[exptime].header['res_std']=std
         # Store 1D profile
-        hdu_this[exptime].data=[profileLeft,profileRight] #profile_2d
+        hdu_this[exptime].data=[profileLeft,profileRight] # 
 
         if plot:
             plt.figure(0,figsize=(20,16))
@@ -133,5 +178,7 @@ for camera in camera_arr:
             plt.title('Std='+str(std)[0:4])
             plt.show()
             print(hdu_this.info())
-    hdu_this.writeto(prefix+camera+'-compressed.fits')
-
+    try:
+        hdu_this.writeto(prefix+camera+'-compressed.fits')
+    except:
+        print(prefix+camera+'-compressed.fits exists')

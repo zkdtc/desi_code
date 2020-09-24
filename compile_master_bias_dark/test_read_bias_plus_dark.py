@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 ############################
 ## Test1 read_bias_plus_dark
 #############################
-img=preproc.read_bias_plus_dark(filename='master-bias-dark-20200607-z9.fits',exptime=830)
-
+img=preproc.read_bias_plus_dark(filename='master-bias-dark-20200607-20200728-z9-compressed.fits',exptime=830)
+import pdb;pdb.set_trace()
 #################################
 ### Test2 image interpolation ###
 #################################

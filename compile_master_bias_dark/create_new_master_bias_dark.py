@@ -57,6 +57,7 @@ cam_arr=['b','r','z']
 ##############################################################################################
 ############### Search all exposures with a specific exptime and compile them ################
 ##############################################################################################
+filename_list_all={}
 for exptime_set in exptime_set_arr:
     
     filename_list=''
@@ -79,7 +80,7 @@ for exptime_set in exptime_set_arr:
                 filename_list=filename_list+filename+' '
 
 
-
+    filename_list_all[exptime_set]=filename_list
     for cam in cam_arr:
         for sp in sp_arr:
             camera=cam+sp
@@ -129,7 +130,11 @@ for cam in cam_arr:
                 plt.show()
                 """
                 ## Store the max and min in the header ##
-
+                if str(exptime_set)=='0':
+                    name='ZERO'
+                else:
+                    name='T'+str(exptime_set)
+                hdu_this[0].header['FILELIST']=filename_list_all[exptime_set]
                 dataHDU = fits.ImageHDU(hdu_this[0].data, header=hdu_this[0].header, name=str(exptime_set))
                 hdus.append(dataHDU)
             #plt.plot(exptime_set_arr,cutout_flux)
