@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 ############################
 ## Test1 read_bias_plus_dark
 #############################
-img=preproc.read_bias_plus_dark(filename='master-bias-dark-20200607-20200728-z9-compressed.fits',exptime=830)
+img=preproc.read_bias_plus_dark(filename='master-bias-dark-20200607-20200728-b0-compressed.fits',exptime=830)
 import pdb;pdb.set_trace()
 #################################
 ### Test2 image interpolation ###
@@ -39,7 +39,7 @@ expid="00056626" # 900s dark
 camera="b0"
 cmd="desi_preproc -i $DESI_SPECTRO_DATA/"+night+"/"+expid+"/desi-"+expid+".fits.fz -o /global/project/projectdirs/desi/users/zhangkai/redux_test/"+night+"/"+expid+"/preproc-"+camera+"-"+expid+".fits --cameras "+camera
 print(cmd)
-#os.system(cmd)
+os.system(cmd)
 
 night="20200609"
 expid="00056908" # 400s for interpolation test

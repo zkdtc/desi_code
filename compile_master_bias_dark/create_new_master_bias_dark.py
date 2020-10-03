@@ -86,7 +86,7 @@ for exptime_set in exptime_set_arr:
             camera=cam+sp
             cmd='desi_compute_bias -i '+filename_list+' -o '+output_dir+'master_bias_dark_'+camera+'_'+str(int(exptime_set))+'.fits --camera '+camera
             print(cmd)
-            os.system(cmd)
+            #os.system(cmd)
 
 ##############################################################################################
 ############### Compile the exposures at a specific exptime to a single file  ################
