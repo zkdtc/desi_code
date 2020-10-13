@@ -7,9 +7,11 @@ import desispec.preproc
 
 camera_arr=['b0','b1','b2','b3','b4','b5','b6','b7','b8','b9','r0','r1','r2','r3','r4','r5','r6','r7','r8','r9','z0','z1','z2','z3','z4','z5','z6','z7','z8','z9']
 #camera_arr=['b0','b1','b2']
+camera_arr=['b2']
+
 res=100
 poly=False # True: Use poly fit result, False use linear algebra result
-plot= False #True
+plot= True#False #True
 
 def calculate_dark(exp_arr,image_arr):
     n_images=len(image_arr)
@@ -133,37 +135,43 @@ for camera in camera_arr:
         hdu_this[exptime].data=np.array([profileLeft,profileRight]).astype('float32') # 
         
         if plot:
-            plt.figure(0,figsize=(20,16))
+            plt.figure(0,figsize=(25,16))
             font = {'family' : 'sans-serif',
                     'weight' : 'normal',
                     'size'   : 10}
             plt.rc('font', **font)
-            plt.subplot(231)
-            plt.imshow(pass1,vmin=-1,vmax=5)
+
+            plt.subplot(241)
+            plt.imshow(hdu_this['0'].data,vmin=-0.5,vmax=2)
+            plt.title('Bias Image')
+            plt.colorbar()
+
+            plt.subplot(242)
+            plt.imshow(pass1,vmin=-1,vmax=3)
             plt.title(camera+' '+exptime+'s After Bias Subtraction')
             plt.colorbar()
 
-            plt.subplot(232)
+            plt.subplot(243)
             plt.imshow(dark,vmin=0,vmax=1.5/750.)
             plt.title('Dark')
             plt.colorbar()
 
-            plt.subplot(233)
-            plt.imshow(pass2,vmin=-1,vmax=1)
+            plt.subplot(244)
+            plt.imshow(pass2,vmin=-0.5,vmax=0.5)
             plt.title('After removing dark current')
             plt.colorbar()
 
-            plt.subplot(234)
-            plt.imshow(profile_2d,vmin=-1,vmax=1)
+            plt.subplot(245)
+            plt.imshow(profile_2d,vmin=-0.5,vmax=0.5)
             plt.title('2D Profile')
             plt.colorbar()
 
-            plt.subplot(235)
-            plt.imshow(pass3,vmin=-1,vmax=1)
+            plt.subplot(246)
+            plt.imshow(pass3,vmin=-0.5,vmax=0.5)
             plt.title('After 2D Profile Subtraction')
             plt.colorbar()
 
-            plt.subplot(236)
+            plt.subplot(247)
             plt.hist(pass3.ravel(),30,range=(-5,5),alpha=0.5)
             plt.xlabel('Residual')
             plt.title('Std='+str(std)[0:4])

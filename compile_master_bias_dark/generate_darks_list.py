@@ -16,7 +16,13 @@ night_arr=['20200607','20200608','20200609']
 #night_arr=['20200729']
 #night_arr=['20200730']
 night_arr=['20200728','20200729','20200730']
-night_arr=['20200609']
+night_arr=['20200607']
+night_arr=['20200608']
+#night_arr=['20200609']
+#night_arr=['20200728']
+night_arr=['20200729']
+#night_arr=['20200730']
+
 
 expid_all=[]
 exptime_all=[]
@@ -35,7 +41,7 @@ for night in night_arr:
         flavor=h1['flavor'].strip()
         exptime=h1['EXPTIME']
         print(expid,flavor,exptime)
-        if flavor=='dark':
+        if flavor=='zero': #flavor=='dark' or flavor=='zero':
             expid_all.append(expid)
             exptime_all.append(exptime)
             flavor_all.append(flavor)

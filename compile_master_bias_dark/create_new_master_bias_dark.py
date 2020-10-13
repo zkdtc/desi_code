@@ -45,9 +45,14 @@ output_dir='' # output direcotry. If current directory, use ''. Otherwise, use
 
 night_arr=['20200728','20200729','20200730','20200607','20200608','20200609']
 exptime_set_arr=[0,1,2,3,5,7,10,20,40,60,80,100,200,300,450,700,900,1200]
-
 exp_reject=[''] # Exposure time to reject
 output_prefix='master-bias-dark-20200607-20200728-' # Final output file prefix. The output file will be output_prefix+camera+.fits
+output_dir='' # output direcotry. If current directory, use ''. Otherwise, use
+
+night_arr=['20200729']
+exptime_set_arr=[0,1,2,3,5,7,10,20,40,60,80,100,200,300,450,700,900,1200]
+exp_reject=['0060633','0060634','0060635','0060636','0060637','0060638','0060639','0060640','0060641','0060642'] # Exposure time to reject
+prefix='20200729' # Final output file prefix. The output file will be output_prefix+camera+.fits
 output_dir='' # output direcotry. If current directory, use ''. Otherwise, use
 
 
@@ -84,9 +89,9 @@ for exptime_set in exptime_set_arr:
     for cam in cam_arr:
         for sp in sp_arr:
             camera=cam+sp
-            cmd='desi_compute_bias -i '+filename_list+' -o '+output_dir+'master_bias_dark_'+camera+'_'+str(int(exptime_set))+'.fits --camera '+camera
+            cmd='desi_compute_bias -i '+filename_list+' -o '+output_dir+'master_bias_dark_'+prefix+'_'+camera+'_'+str(int(exptime_set))+'.fits --camera '+camera
             print(cmd)
-            #os.system(cmd)
+            os.system(cmd)
 
 ##############################################################################################
 ############### Compile the exposures at a specific exptime to a single file  ################
@@ -97,13 +102,13 @@ for cam in cam_arr:
     for sp in sp_arr:
         camera=cam+sp
         hdus = fits.HDUList()
-        output=output_dir+output_prefix+camera+'.fits'
+        output=output_dir+'/master-bias-dark-'+prefix+'-'+camera+'.fits'
         print(camera)
         print(output)
         cutout_flux=[]
-        try:
+        if True:
             for exptime_set in exptime_set_arr:
-                filename=output_dir+'master_bias_dark_'+camera+'_'+str(int(exptime_set))+'.fits'
+                filename=output_dir+'master_bias_dark_'+prefix+'_'+camera+'_'+str(int(exptime_set))+'.fits'
                 hdu_this = fits.open(filename)
                 """
                 ## Compress to 8 or 16 bits ##
@@ -142,7 +147,7 @@ for cam in cam_arr:
             #plt.ylabel('Median Flux')
             #plt.show()
             hdus.writeto(output)
-        except:
+        else:#except:
             pass
 
 

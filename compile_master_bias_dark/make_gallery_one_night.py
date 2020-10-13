@@ -19,14 +19,14 @@ night='20200607'
 expid_arr=['00056569','00056570','00056571','00056572','00056573','00056574','00056575','00056576','00056577','00056578','00056579','00056580','00056583','00056584','00056585','00056586','00056587','00056588','00056589','00056590','00056591','00056592','00056593','00056594','00056595','00056597','00056598','00056599','00056600','00056601','00056602','00056603','00056604','00056610','00056611']
 exptime_arr=[0]*len(expid_arr)
 
-#night='20200608'
-#expid_arr=['00056619','00056620','00056621','00056622','00056623','00056629','00056630','00056631','00056632','00056633','00056639','00056640','00056641','00056642','00056643','00056649','00056650','00056651','00056652','00056653','00056659','00056660','00056661','00056662','00056663','00056776','00056777','00056779','00056780','00056782','00056791','00056792','00056793','00056794','00056795','00056796','00056797','00056798','00056799','00056800','00056801','00056802','00056803','00056804','00056805','00056806','00056807','00056808','00056809','00056810','00056811','00056812','00056813','00056814','00056815','00056816','00056817','00056823','00056824','00056825','00056826','00056827','00056833','00056834','00056835','00056836','00056837']
-#exptime_arr=[0]*len(expid_arr)
+night='20200608'
+expid_arr=['00056619','00056620','00056621','00056622','00056623','00056629','00056630','00056631','00056632','00056633','00056639','00056640','00056641','00056642','00056643','00056649','00056650','00056651','00056652','00056653','00056659','00056660','00056661','00056662','00056663','00056776','00056777','00056779','00056780','00056782','00056791','00056792','00056793','00056794','00056795','00056796','00056797','00056798','00056799','00056800','00056801','00056802','00056803','00056804','00056805','00056806','00056807','00056808','00056809','00056810','00056811','00056812','00056813','00056814','00056815','00056816','00056817','00056823','00056824','00056825','00056826','00056827','00056833','00056834','00056835','00056836','00056837']
+exptime_arr=[0]*len(expid_arr)
 
 
-#night='20200609'
-#expid_arr=['00056843','00056844','00056845','00056846','00056847','00056853','00056854','00056855','00056856','00056857','00056863','00056864','00056865','00056866','00056867','00056933','00056934','00056935','00056936','00056937','00056968','00056969','00056970','00056971','00056972'] # zeros on 20200609
-#exptime_arr=[0]*len(expid_arr)
+night='20200609'
+expid_arr=['00056843','00056844','00056845','00056846','00056847','00056853','00056854','00056855','00056856','00056857','00056863','00056864','00056865','00056866','00056867','00056933','00056934','00056935','00056936','00056937','00056968','00056969','00056970','00056971','00056972'] # zeros on 20200609
+exptime_arr=[0]*len(expid_arr)
 
 #night='20200728'
 #expid_arr=['00060463','00060464','00060465','00060466','00060467','00060468','00060469','00060470','00060471','00060472','00060473','00060474','00060475','00060476','00060477','00060478','00060479','00060480','00060481','00060482','00060483','00060484','00060485','00060486','00060487','00060488','00060489','00060490','00060491','00060492','00060493','00060494','00060495','00060496','00060497','00060498','00060499','00060500','00060501','00060502','00060503','00060504','00060505','00060506','00060507','00060508','00060509','00060510','00060511','00060512','00060513','00060514','00060515','00060516','00060517','00060518','00060523','00060528','00060533','00060539','00060540','00060541','00060542','00060543','00060548'] # zeros on 20200728
@@ -49,12 +49,80 @@ sp_arr=['0', '1','2','3','4','5','6','7','8','9']
 sm_arr=['4','10','5','6','1','9','7','8','2','3']
 cam_arr=['b','r','z']
 
+outdir='/global/project/projectdirs/desi/users/zhangkai/desi_code/compile_master_bias_dark/gallery/img/'+night+'/'
+cmd='mkdir '+outdir
+os.system(cmd)
+
+
+def initialize_html(night):
+    strTable="""<html><style>
+    h1 {font-family: 'sans-serif';font-size:50px;color:#4CAF50}
+    #c {font-family: 'Trebuchet MS', Arial, Helvetica, sans-serif;border-collapse: collapse;width: 100%;}
+    #c td, #c th {border: 1px solid #ddd;padding: 8px;}
+    #c tr:nth-child(even){background-color: #f2f2f2;}
+    #c tr:hover {background-color: #ddd;}
+    #c th {padding-top: 12px;  padding-bottom: 12px;  text-align: left;  background-color: #4CAF50;  color: white;}
+    .collapsible {background-color: #eee;color: #444;cursor: pointer;padding: 18px;width: 100%;border: none;text-align: left;outline: none;font-size: 25px;}
+    .regular {background-color: #eee;color: #444;  cursor: pointer;  padding: 18px;  width: 25%;  border: 18px;  text-align: left;  outline: none;  font-size: 25px;}
+    .active, .collapsible:hover {  background-color: #ccc;}
+    .content {padding: 0 18px;display: table;overflow: hidden;background-color: #f1f1f1;maxHeight:0px;}
+    /* The Modal (background) */
+    .modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 100px; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 90%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    }
+
+    /* Modal Content */
+    .modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    }
+
+    /* The Close Button */
+    .close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    }
+    .close:hover,
+    .close:focus {
+         color: #000;
+         text-decoration: none;
+         cursor: pointer;
+     }
+    </style>
+    <h1>NIGHT """+night+"""</h1>"""
+
+    return strTable
+
+def add_img(filename):
+    return "<img src='"+filename+"' width='60%'>"
+
 
 for camera in camera_arr:
-    with PdfPages('check_many_darks_to_verify_'+camera+'_'+appendix+'_'+night+'_zeros.pdf') as pdf:
+    #file_html='/global/cfs/cdirs/desi/users/zhangkai/preproc/'+night+'-'+camera+'.html'
+    file_html=outdir+'/'+night+'-'+camera+'.html'
+    ## Initialize html
+    html_str=initialize_html(night)
+
+    if True: #with PdfPages('check_many_darks_to_verify_'+camera+'_'+appendix+'_'+night+'_zeros.pdf') as pdf:
         for expid,exptime in zip(expid_arr,exptime_arr):
             print(camera,expid,exptime)
-
+            outfile_naked='img-'+camera+'-'+expid+'.png'
+            outfile=outdir+'/'+outfile_naked
             plt.figure(figsize=(18,18))
             font = {'family' : 'normal',
                  'size'   : 16}
@@ -63,6 +131,7 @@ for camera in camera_arr:
             file_preproc1=preproc_dir1+'/'+night+'/'+expid+'/preproc-'+camera+'-'+expid+'.fits'
             try:
                 hdul1=fits.open(file_preproc1)
+                html_str=html_str+add_img(outfile_naked)
             except:
                 continue
             nx=len(hdul1[0].data)
@@ -118,7 +187,13 @@ for camera in camera_arr:
             plt.colorbar()
 
             plt.tight_layout()
-            pdf.savefig()
+            #pdf.savefig()
+            plt.savefig(outfile)
             plt.close()
+
+    html_str=html_str+"</html>"
+    hs=open(file_html,'w')
+    hs.write(html_str)
+    hs.close()
 
 

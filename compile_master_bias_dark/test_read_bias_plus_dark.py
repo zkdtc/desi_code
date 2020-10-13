@@ -5,7 +5,53 @@ import matplotlib.pyplot as plt
 ############################
 ## Test1 read_bias_plus_dark
 #############################
-img=preproc.read_bias_plus_dark(filename='master-bias-dark-20200607-20200728-b0-compressed.fits',exptime=830)
+zmax=5
+exptime=0
+camera='b0'
+expid='test'
+
+img=preproc.read_bias_plus_dark(filename='master-bias-dark-20200607-20200728-b0-compressed.fits',exptime=exptime)
+nx=len(img)
+x=np.arange(nx)
+y_hat1 = np.median(img[:,1000:1500],axis=1)
+y_hat2 = np.median(img[:,2500:3000],axis=1)
+y_hat3=np.median(img[1000:1500,:],axis=0)
+y_hat4=np.median(img[2500:3000,:],axis=0)
+plt.figure(figsize=(18,18))
+font = {'family' : 'normal',
+        'size'   : 16}
+plt.rc('font', **font)
+
+plt.subplot(2,2,1)
+plt.plot(x,y_hat1,label='[1000:1500] column median')
+plt.plot(x,y_hat2+1,label='[2500:3000] column median+1')
+plt.plot([-100,10000],[0,0],'b--')
+plt.plot([-100,10000],[1,1],'b--')
+plt.title('EXPID:'+expid+' EXPTIME='+str(exptime))
+plt.axis([0,4200,-1,zmax])
+plt.yscale('linear')
+plt.xlabel('CCD row')
+plt.ylabel('electron/pix')
+plt.title(expid+' '+camera+' EXPTIME='+str(exptime))
+plt.legend(loc=0)
+
+plt.subplot(2,2,2)
+plt.plot(y_hat3,label='[1000:1500] row median')
+plt.plot(y_hat4+1,label='[2500:3000] row median+1')
+plt.plot([-100,10000],[0,0],'b--')
+plt.plot([-100,10000],[1,1],'b--')
+plt.axis([0,4200,-1,zmax])
+plt.yscale('linear')
+plt.xlabel('CCD column')
+plt.ylabel('electron/pix')
+plt.title(expid+' '+camera)
+plt.legend(loc=0)
+
+plt.subplot(2,2,3)
+plt.imshow(img,vmin=-1,vmax=zmax)
+plt.colorbar()
+
+plt.show()
 import pdb;pdb.set_trace()
 #################################
 ### Test2 image interpolation ###
